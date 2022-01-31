@@ -50,12 +50,14 @@ public:
     int     sendMessage     (mavlink_message_t* message);
     int     sendMessageRaw   (uint8_t *buffer, int len);
     linkStatus* getStatus   ();
+    bool    isArmed         ();
 
 private:
     bool    _readMessage    ();
     void    _send_pending();
 
 private:
+    bool                    _armed;
     unsigned long           _queue_time;
     mavlink_message_t       _msg;
 };

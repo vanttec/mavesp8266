@@ -135,6 +135,14 @@ MavESP8266Vehicle::getStatus()
 }
 
 //---------------------------------------------------------------------------------
+//-- Returns whether the UAS is likely to be armed
+bool
+MavESP8266Vehicle::isArmed()
+{
+    return _armed;
+}
+
+//---------------------------------------------------------------------------------
 //-- Read MavLink message from UAS
 bool
 MavESP8266Vehicle::_readMessage()
@@ -178,6 +186,16 @@ MavESP8266Vehicle::_readMessage()
                     if(_msg.msgid == MAVLINK_MSG_ID_HEARTBEAT)
                         _last_heartbeat = millis();
                     _checkLinkErrors(&_msg);
+                }
+
+                //-- Update the status of the 'armed' flag if we have a heartbeat
+                if (_msg.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
+                    uint8_t system_status = mavlink_msg_heartbeat_get_system_status(&_msg);
+                    _armed = (
+                        system_status == MAV_STATE_ACTIVE ||
+                        system_status == MAV_STATE_CRITICAL ||
+                        system_status == MAV_STATE_EMERGENCY
+                    );
                 }
 
                 if (msgReceived == MAVLINK_FRAMING_BAD_CRC) {
