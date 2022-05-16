@@ -83,7 +83,7 @@ MavESP8266Vehicle::readMessage()
 
 void
 MavESP8266Vehicle::readMessageRaw() {
-    char buf[1024];
+    static uint8_t buf[1024];
     int buf_index = 0;
 
     while(Serial.available() && buf_index < 300)
@@ -91,13 +91,13 @@ MavESP8266Vehicle::readMessageRaw() {
         int result = Serial.read();
         if (result >= 0)
         {
-            buf[buf_index] = (char)result;
+            buf[buf_index] = result;
             buf_index++;
         }
     }
 
     if (buf_index > 0) {
-        _forwardTo->sendMessageRaw((uint8_t*)buf, buf_index);
+        _forwardTo->sendMessageRaw(buf, buf_index);
     }
 }
 

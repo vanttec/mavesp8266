@@ -188,7 +188,7 @@ MavESP8266GCS::_readMessage()
 void
 MavESP8266GCS::readMessageRaw() {
     int udp_count = _udp.parsePacket();
-    char buf[1024];
+    static uint8_t buf[1024];
     int buf_index = 0;
 
     if(udp_count > 0)
@@ -198,7 +198,7 @@ MavESP8266GCS::readMessageRaw() {
             int result = _udp.read();
             if (result >= 0)
             {
-                buf[buf_index] = (char)result;
+                buf[buf_index] = result;
                 buf_index++;
             }
         }
