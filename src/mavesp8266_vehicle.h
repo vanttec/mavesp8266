@@ -51,6 +51,7 @@ public:
     int     sendMessageRaw   (uint8_t *buffer, int len);
     linkStatus* getStatus   ();
     bool    isArmed         ();
+    bool    isPoweredOn     ();
 
 private:
     bool    _readMessage    ();
@@ -58,6 +59,7 @@ private:
 
 private:
     bool                    _armed;
+    bool                    _powered_on;
     unsigned long           _queue_time;
     mavlink_message_t       _msg;
 };

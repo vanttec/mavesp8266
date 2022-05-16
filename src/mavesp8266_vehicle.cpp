@@ -143,6 +143,14 @@ MavESP8266Vehicle::isArmed()
 }
 
 //---------------------------------------------------------------------------------
+//-- Returns whether the UAS is likely to be powered on
+bool
+MavESP8266Vehicle::isPoweredOn()
+{
+    return _powered_on;
+}
+
+//---------------------------------------------------------------------------------
 //-- Read MavLink message from UAS
 bool
 MavESP8266Vehicle::_readMessage()
@@ -196,6 +204,7 @@ MavESP8266Vehicle::_readMessage()
                         system_status == MAV_STATE_CRITICAL ||
                         system_status == MAV_STATE_EMERGENCY
                     );
+                    _powered_on = true;
                 }
 
                 if (msgReceived == MAVLINK_FRAMING_BAD_CRC) {
@@ -225,6 +234,7 @@ MavESP8266Vehicle::_readMessage()
     if(!msgReceived) {
         if(_heard_from && (millis() - _last_heartbeat) > HEARTBEAT_TIMEOUT) {
             _heard_from = false;
+            _powered_on = false;
             getWorld()->getLogger()->log("Heartbeat timeout from Vehicle\n");
         }
     }
