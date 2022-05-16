@@ -52,9 +52,7 @@ bool
 MavESP8266Component::inRawMode() {
   // switch out of raw mode when not needed anymore
   if (_in_raw_mode_time > 0 && millis() > _in_raw_mode_time + 5000) {
-    _in_raw_mode = false;
-    _in_raw_mode_time = 0;
-    getWorld()->getLogger()->log("Raw mode disabled\n");
+      _exitRawMode();
   }
 
   return _in_raw_mode;
@@ -286,11 +284,9 @@ MavESP8266Component::_handleCmdLong(MavESP8266Bridge* sender, mavlink_command_lo
             reboot = true;
         }
 
-        // recognize FC reboot command and switch to raw mode for bootloader protocol to work
-        if(compID == MAV_COMP_ID_ALL && (uint8_t)cmd->param1 > 0) {
-          getWorld()->getLogger()->log("Raw mode enabled (cmd %d %d)\n", cmd->command, compID);
-          _in_raw_mode = true;
-          _in_raw_mode_time = 0;
+        // recognize FC "reboot and stay in bootloader" command and switch to raw mode for bootloader protocol to work
+        if(compID == MAV_COMP_ID_ALL && (uint8_t)cmd->param1 == 3) {
+            _enterRawMode(cmd, compID);
         }
     }
     //-- Response
@@ -322,4 +318,35 @@ MavESP8266Component::_wifiReboot(MavESP8266Bridge* sender)
     _sendStatusMessage(sender, MAV_SEVERITY_NOTICE, "Rebooting WiFi Bridge.");
     delay(50);
     ESP.reset();
+}
+
+
+void
+MavESP8266Component::_enterRawMode(mavlink_command_long_t *cmd, uint8_t compID)
+{
+    if (_in_raw_mode) {
+        return;
+    }
+
+    if (cmd) {
+        getWorld()->getLogger()->log("Raw mode enabled (cmd %d %d)\n", cmd->command, compID);
+    } else {
+        getWorld()->getLogger()->log("Raw mode enabled\n");
+    }
+
+    _in_raw_mode = true;
+    _in_raw_mode_time = 0;
+}
+
+void
+MavESP8266Component::_exitRawMode()
+{
+    if (!_in_raw_mode) {
+        _in_raw_mode_time = 0;
+        return;
+    }
+
+    _in_raw_mode = false;
+    _in_raw_mode_time = 0;
+    getWorld()->getLogger()->log("Raw mode disabled\n");
 }

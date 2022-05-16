@@ -61,6 +61,9 @@ private:
 
     void    _wifiReboot             (MavESP8266Bridge* sender);
 
+    void    _enterRawMode           (mavlink_command_long_t* cmd = 0, uint8_t compID = 0);
+    void    _exitRawMode            ();
+
     bool            _in_raw_mode;
     unsigned long   _in_raw_mode_time;
 };
