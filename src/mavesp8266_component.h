@@ -49,6 +49,9 @@ public:
     bool inRawMode            ();
     void resetRawMode         () { _in_raw_mode_time = millis(); }
 
+    void enableRawMode        () { _enterRawMode(); }
+    void disableRawMode       () { _exitRawMode(); }
+
 private:
     void    _sendStatusMessage      (MavESP8266Bridge* sender, uint8_t type, const char* text);
     void    _handleParamSet         (MavESP8266Bridge* sender, mavlink_param_set_t* param);

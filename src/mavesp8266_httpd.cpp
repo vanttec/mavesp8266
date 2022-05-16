@@ -36,6 +36,7 @@
  */
 
 #include "mavesp8266.h"
+#include "mavesp8266_component.h"
 #include "mavesp8266_httpd.h"
 #include "mavesp8266_parameters.h"
 #include "mavesp8266_gcs.h"
@@ -381,6 +382,9 @@ static void handle_getStatus()
     message += "<tr><td>Parameters CRC</td><td>";
     message += paramCRC;
     message += "</td></tr>\n";
+    message += "<tr><td>Raw mode</td><td>";
+    message += getWorld()->getComponent()->inRawMode() ? "on" : "off";
+    message += "</td></tr>\n";
     message += "</table>";
     message += "</body>";
     setNoCacheHeaders();
@@ -550,6 +554,25 @@ void handle_setParameters()
 }
 
 //---------------------------------------------------------------------------------
+void handle_rawMode()
+{
+    if(webServer.args() == 0) {
+        handle_getStatus();
+        return;
+    }
+
+    if(webServer.hasArg(kMODE)) {
+        if (webServer.arg(kMODE).toInt()) {
+            getWorld()->getComponent()->enableRawMode();
+        } else {
+            getWorld()->getComponent()->disableRawMode();
+        }
+        handle_getStatus();
+    } else
+        returnFail(kBADARG);
+}
+
+//---------------------------------------------------------------------------------
 static void handle_reboot()
 {
     String message = FPSTR(kHEADER);
@@ -593,6 +616,7 @@ MavESP8266Httpd::begin(MavESP8266Update* updateCB_)
     webServer.on("/getparameters",  handle_getParameters);
     webServer.on("/setparameters",  handle_setParameters);
     webServer.on("/getstatus",      handle_getStatus);
+    webServer.on("/raw",            handle_rawMode);
     webServer.on("/reboot",         handle_reboot);
     webServer.on("/setup",          handle_setup);
     webServer.on("/info.json",      handle_getJSysInfo);
