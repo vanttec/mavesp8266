@@ -203,7 +203,7 @@ MavESP8266GCS::readMessageRaw() {
             }
         }
 
-        if (buf[0] == 0x30 && buf[1] == 0x20) {
+        if (buf_index >= 2 && buf[0] == 0x30 && buf[1] == 0x20) {
             // reboot command, switch out of raw mode soon
             getWorld()->getComponent()->resetRawMode();
         }
