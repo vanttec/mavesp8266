@@ -53,13 +53,15 @@ public:
     bool    isArmed         ();
     bool    isPoweredOn     ();
 
+    bool    requestPowerOff ();
+    bool    requestPowerOn  ();
+
 private:
     bool    _readMessage    ();
     void    _send_pending();
 
 private:
     bool                    _armed;
-    bool                    _powered_on;
     unsigned long           _queue_time;
     mavlink_message_t       _msg;
 };

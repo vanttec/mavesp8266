@@ -61,7 +61,7 @@ private:
     void    _sendParameter          (MavESP8266Bridge* sender, const char* id, uint32_t value, uint16_t index);
 
     void    _handleCmdLong          (MavESP8266Bridge* sender, mavlink_command_long_t* cmd, uint8_t compID);
-
+    bool    _handleCmdLongForFC     (MavESP8266Bridge* sender, mavlink_command_long_t* cmd, uint8_t compID);
     void    _wifiReboot             (MavESP8266Bridge* sender);
 
     void    _enterRawMode           (mavlink_command_long_t* cmd = 0, uint8_t compID = 0);

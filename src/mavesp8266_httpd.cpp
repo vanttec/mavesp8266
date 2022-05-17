@@ -384,6 +384,11 @@ static void handle_getStatus()
     message += "</td></tr>\n";
     message += "<tr><td>Raw mode</td><td>";
     message += getWorld()->getComponent()->inRawMode() ? "on" : "off";
+#ifdef FC_POWER_PIN
+    message += "</td></tr>\n";
+    message += "<tr><td>Vehicle power</td><td>";
+    message += getWorld()->getVehicle()->isPoweredOn() ? "on" : "off";
+#endif
     message += "</td></tr>\n";
     message += "</table>";
     message += "</body>";

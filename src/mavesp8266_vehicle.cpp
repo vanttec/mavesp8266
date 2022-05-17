@@ -147,7 +147,15 @@ MavESP8266Vehicle::isArmed()
 bool
 MavESP8266Vehicle::isPoweredOn()
 {
-    return _powered_on;
+#ifdef FC_POWER_PIN
+    // We have a pin that can be used to turn the flight controller on or off
+    // so use that
+    return digitalRead(FC_POWER_PIN);
+#else
+    // We don't have such a pin so just track whether we've seen MAVLink
+    // heartbeats from the FC
+    return _heard_from;
+#endif
 }
 
 //---------------------------------------------------------------------------------
@@ -204,7 +212,6 @@ MavESP8266Vehicle::_readMessage()
                         system_status == MAV_STATE_CRITICAL ||
                         system_status == MAV_STATE_EMERGENCY
                     );
-                    _powered_on = true;
                 }
 
                 if (msgReceived == MAVLINK_FRAMING_BAD_CRC) {
@@ -234,10 +241,37 @@ MavESP8266Vehicle::_readMessage()
     if(!msgReceived) {
         if(_heard_from && (millis() - _last_heartbeat) > HEARTBEAT_TIMEOUT) {
             _heard_from = false;
-            _powered_on = false;
             getWorld()->getLogger()->log("Heartbeat timeout from Vehicle\n");
         }
     }
     return msgReceived;
+}
+
+//---------------------------------------------------------------------------------
+//-- Turn off power to the UAS flight controller
+//-- Returns true if successful, false otherwise.
+bool
+MavESP8266Vehicle::requestPowerOff()
+{
+#ifdef FC_POWER_PIN
+    digitalWrite(FC_POWER_PIN, LOW);
+    return true;
+#else
+    return false;
+#endif
+}
+
+//---------------------------------------------------------------------------------
+//-- Turn on power to the UAS flight controller
+//-- Returns true if successful, false otherwise.
+bool
+MavESP8266Vehicle::requestPowerOn()
+{
+#ifdef FC_POWER_PIN
+    digitalWrite(FC_POWER_PIN, HIGH);
+    return true;
+#else
+    return false;
+#endif
 }
 

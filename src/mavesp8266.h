@@ -62,6 +62,11 @@ class MavESP8266GCS;
 
 #define HEARTBEAT_TIMEOUT           10 * 1000
 
+//-- Set this to the GPIO pin that can be used to turn the flight controller
+//-- on or off. Do not define it if you do not have such a GPIO pin.
+#define FC_POWER_PIN                4
+#define FC_POWER_PIN_INITIAL_STATE  HIGH
+
 //-- TODO: This needs to come from the build system
 #define MAVESP8266_VERSION_MAJOR    1
 #define MAVESP8266_VERSION_MINOR    2

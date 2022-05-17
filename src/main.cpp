@@ -148,6 +148,12 @@ void setup() {
 #endif
     Logger.begin(2048);
 
+#ifdef FC_POWER_PIN
+    //-- Initialize power pin (if there is one)
+    pinMode(FC_POWER_PIN, OUTPUT);
+    digitalWrite(FC_POWER_PIN, FC_POWER_PIN_INITIAL_STATE);
+#endif
+
     DEBUG_LOG("\nConfiguring access point...\n");
     DEBUG_LOG("Free Sketch Space: %u\n", ESP.getFreeSketchSpace());
 

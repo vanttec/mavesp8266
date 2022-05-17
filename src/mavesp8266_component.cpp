@@ -81,6 +81,13 @@ MavESP8266Component::handleMessage(MavESP8266Bridge* sender, mavlink_message_t* 
   } else if(message->msgid == MAVLINK_MSG_ID_COMMAND_LONG) {
       mavlink_command_long_t cmd;
       mavlink_msg_command_long_decode(message, &cmd);
+
+      // We are handling certain commands on behalf of the flight controller if
+      // the FC is powered down to facilitate remote wakeup and shutdown
+      if(cmd.target_component == MAV_COMP_ID_AUTOPILOT1) {
+          return _handleCmdLongForFC(sender, &cmd, cmd.target_component);
+      }
+
       if(cmd.target_component == MAV_COMP_ID_ALL || cmd.target_component == MAV_COMP_ID_UDP_BRIDGE) {
           _handleCmdLong(sender, &cmd, cmd.target_component);
           //-- If it was directed to us, eat it and loop
@@ -307,6 +314,109 @@ MavESP8266Component::_handleCmdLong(MavESP8266Bridge* sender, mavlink_command_lo
     if(reboot) {
         _wifiReboot(sender);
     }
+}
+
+
+//---------------------------------------------------------------------------------
+//-- Handle commands sent to the flight controller
+bool
+MavESP8266Component::_handleCmdLongForFC(MavESP8266Bridge* sender, mavlink_command_long_t* cmd, uint8_t compID)
+{
+    uint8_t result = MAV_RESULT_UNSUPPORTED;
+    bool isPoweredOn = getWorld()->getVehicle()->isPoweredOn();
+
+    // We only handle MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN messages on behalf
+    // of the FC.
+    if(cmd->command != MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN) {
+        return false;
+    }
+
+    switch (static_cast<uint8_t>(cmd->param1)) {
+        case 0:
+            // Do nothing. If the drone is powered on, we just forward it,
+            // otherwise we handle it on our own.
+            if (isPoweredOn) {
+                return false;
+            } else if (cmd->param2 != 0 || cmd->param3 != 0) {
+                // Operation was requested for companion computer or
+                // other component. We cannot handle this so we return
+                // FAILED.
+                result = MAV_RESULT_FAILED;
+            } else {
+                result = MAV_RESULT_ACCEPTED;
+            }
+            break;
+
+        case 1:
+            // Request to reboot. If the drone is powered on, we just forward it,
+            // otherwise we handle it on our own.
+            if (isPoweredOn) {
+                return false;
+            } else if (cmd->param2 != 0 || cmd->param3 != 0) {
+                // Operation was requested for companion computer or
+                // other component. We cannot handle this so we return
+                // FAILED.
+                result = MAV_RESULT_FAILED;
+            } else {
+                // We treat this command the same way as a request to turn on.
+                result = getWorld()->getVehicle()->requestPowerOn() ? MAV_RESULT_ACCEPTED : MAV_RESULT_UNSUPPORTED;
+            }
+            break;
+
+        case 2:
+            // Request shutdown. We handle it the same way no matter whether the
+            // drone is currently reported to be powered on or off in case the
+            // status flag is incorrect.
+            result = getWorld()->getVehicle()->requestPowerOff() ? MAV_RESULT_ACCEPTED : MAV_RESULT_UNSUPPORTED;
+            break;
+
+        case 3:
+            // Request to reboot and stay in the bootloader. We need to follow
+            // suit and switch to raw mode so the GCS can talk to the bootloader
+            // through us, but only if we know that the FC is on. If it is not
+            // on, we cannot make the drone reboot and stay in the bootloader so
+            // we return FAILED on our own.
+            if (isPoweredOn) {
+                _enterRawMode(cmd, compID);
+                return false;
+            } else {
+                result = MAV_RESULT_FAILED;
+            }
+
+        case 127:
+            // The secret sauce: our own command code to request a drone to turn
+            // on. If the drone is already powered on, we report it as a success.
+            // We never forward this message to the FC because it is not a valid
+            // MAVLink message with this parameter.
+            result = getWorld()->getVehicle()->requestPowerOn() ? MAV_RESULT_ACCEPTED : MAV_RESULT_UNSUPPORTED;
+            break;
+
+        default:
+            // Other, unhandled command code. If the drone is powered on, let's
+            // just forward the command to the FC and hope that it knows what to
+            // do with it. If the drone is off, let's respond with an UNSUPPORTED
+            // code on our own.
+            if (isPoweredOn) {
+                return false;
+            } else {
+                result = MAV_RESULT_UNSUPPORTED;
+            }
+    }
+
+    // Send the response
+    mavlink_message_t msg;
+    mavlink_msg_command_ack_pack_chan(
+        getWorld()->getVehicle()->systemID(),
+        MAV_COMP_ID_AUTOPILOT1,
+        sender->_send_chan,
+        &msg,
+        cmd->command,
+        result,
+        0,0,0,0
+    );
+    sender->sendMessage(&msg);
+    
+    return true;
 }
 
 
