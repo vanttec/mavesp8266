@@ -207,8 +207,12 @@ MavESP8266Vehicle::_readMessage()
                 //-- Update the status of the 'armed' flag if we have a heartbeat
                 if (_msg.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
                     uint8_t system_status = mavlink_msg_heartbeat_get_system_status(&_msg);
+                    uint8_t base_mode = mavlink_msg_heartbeat_get_base_mode(&_msg);
                     _armed = (
-                        system_status == MAV_STATE_ACTIVE ||
+                        (
+                            system_status == MAV_STATE_ACTIVE &&
+                            (base_mode & MAV_MODE_FLAG_SAFETY_ARMED) != 0
+                        ) ||
                         system_status == MAV_STATE_CRITICAL ||
                         system_status == MAV_STATE_EMERGENCY
                     );
