@@ -41,6 +41,7 @@
 #include "mavesp8266_parameters.h"
 #include "mavesp8266_gcs.h"
 #include "mavesp8266_vehicle.h"
+#include "mavesp8266_power_mgmt.h"
 
 #include <ESP8266WebServer.h>
 
@@ -384,11 +385,13 @@ static void handle_getStatus()
     message += "</td></tr>\n";
     message += "<tr><td>Raw mode</td><td>";
     message += getWorld()->getComponent()->inRawMode() ? "on" : "off";
-#ifdef FC_POWER_PIN
-    message += "</td></tr>\n";
-    message += "<tr><td>Vehicle power</td><td>";
-    message += getWorld()->getVehicle()->isPoweredOn() ? "on" : "off";
-#endif
+
+    if (getWorld()->getPowerMgmt()->supportsReadingPowerState()) {
+        message += "</td></tr>\n";
+        message += "<tr><td>Vehicle power</td><td>";
+        message += getWorld()->getPowerMgmt()->isPowerOn() ? "on" : "off";
+    }
+
     message += "</td></tr>\n";
     message += "</table>";
     message += "</body>";

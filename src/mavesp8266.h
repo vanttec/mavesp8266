@@ -54,6 +54,7 @@ class MavESP8266Parameters;
 class MavESP8266Component;
 class MavESP8266Vehicle;
 class MavESP8266GCS;
+class MavESP8266PowerMgmt;
 
 #define DEFAULT_UART_SPEED          921600
 #define DEFAULT_WIFI_CHANNEL        11
@@ -65,7 +66,10 @@ class MavESP8266GCS;
 //-- Set this to the GPIO pin that can be used to turn the flight controller
 //-- on or off. Do not define it if you do not have such a GPIO pin.
 #define FC_POWER_PIN                4
-#define FC_POWER_PIN_INITIAL_STATE  HIGH
+
+// -- Set this to HIGH or LOW depending on whether the flight controller is
+// -- powered on when the pin is HIGH or LOW.
+#define FC_POWER_PIN_ACTIVE_STATE  HIGH
 
 //-- TODO: This needs to come from the build system
 #define MAVESP8266_VERSION_MAJOR    1
@@ -158,6 +162,7 @@ public:
     virtual MavESP8266Vehicle*      getVehicle      () = 0;
     virtual MavESP8266GCS*          getGCS          () = 0;
     virtual MavESP8266Log*          getLogger       () = 0;
+    virtual MavESP8266PowerMgmt*    getPowerMgmt    () = 0;
 };
 
 //---------------------------------------------------------------------------------

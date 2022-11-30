@@ -143,22 +143,6 @@ MavESP8266Vehicle::isArmed()
 }
 
 //---------------------------------------------------------------------------------
-//-- Returns whether the UAS is likely to be powered on
-bool
-MavESP8266Vehicle::isPoweredOn()
-{
-#ifdef FC_POWER_PIN
-    // We have a pin that can be used to turn the flight controller on or off
-    // so use that
-    return digitalRead(FC_POWER_PIN);
-#else
-    // We don't have such a pin so just track whether we've seen MAVLink
-    // heartbeats from the FC
-    return _heard_from;
-#endif
-}
-
-//---------------------------------------------------------------------------------
 //-- Read MavLink message from UAS
 bool
 MavESP8266Vehicle::_readMessage()
@@ -250,32 +234,3 @@ MavESP8266Vehicle::_readMessage()
     }
     return msgReceived;
 }
-
-//---------------------------------------------------------------------------------
-//-- Turn off power to the UAS flight controller
-//-- Returns true if successful, false otherwise.
-bool
-MavESP8266Vehicle::requestPowerOff()
-{
-#ifdef FC_POWER_PIN
-    digitalWrite(FC_POWER_PIN, LOW);
-    return true;
-#else
-    return false;
-#endif
-}
-
-//---------------------------------------------------------------------------------
-//-- Turn on power to the UAS flight controller
-//-- Returns true if successful, false otherwise.
-bool
-MavESP8266Vehicle::requestPowerOn()
-{
-#ifdef FC_POWER_PIN
-    digitalWrite(FC_POWER_PIN, HIGH);
-    return true;
-#else
-    return false;
-#endif
-}
-

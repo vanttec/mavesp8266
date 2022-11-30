@@ -38,6 +38,7 @@
 #include "mavesp8266.h"
 #include "mavesp8266_component.h"
 #include "mavesp8266_parameters.h"
+#include "mavesp8266_power_mgmt.h"
 #include "mavesp8266_vehicle.h"
 
 const char* kHASH_PARAM = "_HASH_CHECK";
@@ -323,7 +324,8 @@ bool
 MavESP8266Component::_handleCmdLongForFC(MavESP8266Bridge* sender, mavlink_command_long_t* cmd, uint8_t compID)
 {
     uint8_t result = MAV_RESULT_UNSUPPORTED;
-    bool isPoweredOn = getWorld()->getVehicle()->isPoweredOn();
+    MavESP8266PowerMgmt* power = getWorld()->getPowerMgmt();
+    bool isPoweredOn = power->isPowerOn(getWorld()->getVehicle()->heardFrom());
 
     // We only handle MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN messages on behalf
     // of the FC.
@@ -359,7 +361,7 @@ MavESP8266Component::_handleCmdLongForFC(MavESP8266Bridge* sender, mavlink_comma
                 result = MAV_RESULT_FAILED;
             } else {
                 // We treat this command the same way as a request to turn on.
-                result = getWorld()->getVehicle()->requestPowerOn() ? MAV_RESULT_ACCEPTED : MAV_RESULT_UNSUPPORTED;
+                result = getWorld()->getPowerMgmt()->requestPowerOn() ? MAV_RESULT_ACCEPTED : MAV_RESULT_UNSUPPORTED;
             }
             break;
 
@@ -367,7 +369,7 @@ MavESP8266Component::_handleCmdLongForFC(MavESP8266Bridge* sender, mavlink_comma
             // Request shutdown. We handle it the same way no matter whether the
             // drone is currently reported to be powered on or off in case the
             // status flag is incorrect.
-            result = getWorld()->getVehicle()->requestPowerOff() ? MAV_RESULT_ACCEPTED : MAV_RESULT_UNSUPPORTED;
+            result = getWorld()->getPowerMgmt()->requestPowerOff() ? MAV_RESULT_ACCEPTED : MAV_RESULT_UNSUPPORTED;
             break;
 
         case 3:
@@ -388,7 +390,7 @@ MavESP8266Component::_handleCmdLongForFC(MavESP8266Bridge* sender, mavlink_comma
             // on. If the drone is already powered on, we report it as a success.
             // We never forward this message to the FC because it is not a valid
             // MAVLink message with this parameter.
-            result = getWorld()->getVehicle()->requestPowerOn() ? MAV_RESULT_ACCEPTED : MAV_RESULT_UNSUPPORTED;
+            result = getWorld()->getPowerMgmt()->requestPowerOn() ? MAV_RESULT_ACCEPTED : MAV_RESULT_UNSUPPORTED;
             break;
 
         default:

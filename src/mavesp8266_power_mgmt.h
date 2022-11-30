@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright (c) 2015, 2016 Gus Grubba. All rights reserved.
+ * Copyright (c) 2022, CollMot Robotics Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,37 +29,33 @@
  ****************************************************************************/
 
 /**
- * @file mavesp8266_vehicle.h
+ * @file mavesp8266_power_mgmt.h
  * ESP8266 Wifi AP, MavLink UART/UDP Bridge
  *
- * @author Gus Grubba <mavlink@grubba.com>
+ * @author Tamas Nepusz <tamas@collmot.com>
  */
 
-#ifndef MAVESP8266_VEHICLE_H
-#define MAVESP8266_VEHICLE_H
+#ifndef MAVESP8266_POWER_MGMT_H
+#define MAVESP8266_POWER_MGMT_H
 
 #include "mavesp8266.h"
 
-class MavESP8266Vehicle : public MavESP8266Bridge {
+class MavESP8266PowerMgmt {
 public:
-    MavESP8266Vehicle();
+    MavESP8266PowerMgmt();
 
-    void    begin           (MavESP8266Bridge* forwardTo);
-    void    readMessage     ();
-    void    readMessageRaw  ();
-    int     sendMessage     (mavlink_message_t* message);
-    int     sendMessageRaw   (uint8_t *buffer, int len);
-    linkStatus* getStatus   ();
-    bool    isArmed         ();
-
-private:
-    bool    _readMessage    ();
-    void    _send_pending();
+public:
+    void begin();
+    bool isPowerOn(bool default_value = true) const;
+    bool requestPowerOff();
+    bool requestPowerOn();
+    void setPinIndex(uint8_t index);
+    void setPinIsActiveHigh(bool value);
+    bool supportsReadingPowerState() const;
 
 private:
-    bool                    _armed;
-    unsigned long           _queue_time;
-    mavlink_message_t       _msg;
+    uint8_t _pin_index;
+    bool _is_active_high;
 };
 
 #endif

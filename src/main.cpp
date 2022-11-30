@@ -41,6 +41,7 @@
 #include "mavesp8266_vehicle.h"
 #include "mavesp8266_httpd.h"
 #include "mavesp8266_component.h"
+#include "mavesp8266_power_mgmt.h"
 
 #include <ESP8266mDNS.h>
 
@@ -83,6 +84,7 @@ MavESP8266Vehicle       Vehicle;
 MavESP8266Httpd         updateServer;
 MavESP8266UpdateImp     updateStatus;
 MavESP8266Log           Logger;
+MavESP8266PowerMgmt     Power;
 
 //---------------------------------------------------------------------------------
 //-- Accessors
@@ -93,6 +95,7 @@ public:
     MavESP8266Vehicle*      getVehicle      () { return &Vehicle;       }
     MavESP8266GCS*          getGCS          () { return &GCS;           }
     MavESP8266Log*          getLogger       () { return &Logger;        }
+    MavESP8266PowerMgmt*    getPowerMgmt    () { return &Power;         }
 };
 
 MavESP8266WorldImp      World;
@@ -150,9 +153,10 @@ void setup() {
 
 #ifdef FC_POWER_PIN
     //-- Initialize power pin (if there is one)
-    pinMode(FC_POWER_PIN, OUTPUT);
-    digitalWrite(FC_POWER_PIN, FC_POWER_PIN_INITIAL_STATE);
+    Power.setPinIsActiveHigh(FC_POWER_PIN_ACTIVE_STATE == HIGH);
+    Power.setPinIndex(FC_POWER_PIN);
 #endif
+    Power.begin();
 
     DEBUG_LOG("\nConfiguring access point...\n");
     DEBUG_LOG("Free Sketch Space: %u\n", ESP.getFreeSketchSpace());
