@@ -46,16 +46,29 @@ public:
 
 public:
     void begin();
+    void loop();
     bool isPowerOn(bool default_value = true) const;
     bool requestPowerOff();
     bool requestPowerOn();
-    void setPinIndex(uint8_t index);
-    void setPinIsActiveHigh(bool value);
+    void setControlPinIndex(uint8_t index);
+    void setControlPinIsActiveHigh(bool value);
+    void setPulseLengthMsec(uint16_t value);
+    void setQueryPinIndex(uint8_t index);
     bool supportsReadingPowerState() const;
 
 private:
-    uint8_t _pin_index;
-    bool _is_active_high;
+    uint8_t _control_pin_index;
+    bool _control_pin_is_active_high;
+    uint8_t _query_pin_index;
+    uint16_t _pulse_length_msec;
+    bool _sending_pulse;
+    uint32_t _pulse_ends_at;
+
+    void startPulse();
+    void finishPulse();
+    bool shouldSendPulse() const;
+
+    void writeControlPin(bool value, bool log = true);
 };
 
 #endif

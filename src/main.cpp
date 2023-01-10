@@ -151,10 +151,15 @@ void setup() {
 #endif
     Logger.begin(2048);
 
-#ifdef FC_POWER_PIN
-    //-- Initialize power pin (if there is one)
-    Power.setPinIsActiveHigh(FC_POWER_PIN_ACTIVE_STATE == HIGH);
-    Power.setPinIndex(FC_POWER_PIN);
+#ifdef FC_POWER_CONTROL_PIN
+    //-- Initialize power control pin (if there is one)
+    Power.setControlPinIsActiveHigh(FC_POWER_CONTROL_PIN_ACTIVE_STATE == HIGH);
+    Power.setControlPinIndex(FC_POWER_CONTROL_PIN);
+    Power.setPulseLengthMsec(FC_POWER_CONTROL_PIN_PULSE_LENGTH_MSEC);
+#endif
+#ifdef FC_POWER_QUERY_PIN
+    //-- Initialize power query pin (if there is one)
+    Power.setQueryPinIndex(FC_POWER_QUERY_PIN);
 #endif
     Power.begin();
 
@@ -230,6 +235,7 @@ void loop() {
             delay(0);
             Vehicle.readMessage();
         }
+        Power.loop();
     }
     updateServer.checkUpdates();
 }

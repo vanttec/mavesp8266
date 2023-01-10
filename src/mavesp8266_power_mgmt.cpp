@@ -38,12 +38,16 @@
 #include <Arduino.h>
 #include "mavesp8266_power_mgmt.h"
 
-#define POWER_ON_LEVEL (_is_active_high ? HIGH : LOW)
-#define POWER_OFF_LEVEL (_is_active_high ? LOW : HIGH)
+#define POWER_ON_LEVEL (_control_pin_is_active_high ? HIGH : LOW)
+#define POWER_OFF_LEVEL (_control_pin_is_active_high ? LOW : HIGH)
+#define ACTIVE_LEVEL (_control_pin_is_active_high ? HIGH : LOW)
+#define PASSIVE_LEVEL (_control_pin_is_active_high ? LOW : HIGH)
 
 //---------------------------------------------------------------------------------
 MavESP8266PowerMgmt::MavESP8266PowerMgmt()
-    : _pin_index(0), _is_active_high(false)
+    : _control_pin_index(0), _control_pin_is_active_high(false),
+    _query_pin_index(0), _pulse_length_msec(0),
+    _sending_pulse(false), _pulse_ends_at(0)
 {
 }
 
@@ -51,8 +55,27 @@ MavESP8266PowerMgmt::MavESP8266PowerMgmt()
 void
 MavESP8266PowerMgmt::begin()
 {
-    pinMode(_pin_index, OUTPUT);
-    digitalWrite(_pin_index, _is_active_high ? HIGH : LOW);
+    if (_control_pin_index) {
+        pinMode(_control_pin_index, OUTPUT);
+    }
+
+    if (_query_pin_index && _query_pin_index != _control_pin_index) {
+        pinMode(_query_pin_index, INPUT);
+    }
+
+    writeControlPin(shouldSendPulse() ? PASSIVE_LEVEL : POWER_ON_LEVEL, /* log = */ false);
+}
+
+//---------------------------------------------------------------------------------
+void
+MavESP8266PowerMgmt::loop()
+{
+    if (_sending_pulse) {
+        uint32_t now = millis();
+        if (now > _pulse_ends_at) {
+            finishPulse();
+        }
+    }
 }
 
 //---------------------------------------------------------------------------------
@@ -60,7 +83,11 @@ bool
 MavESP8266PowerMgmt::isPowerOn(bool default_value) const
 {
     if (supportsReadingPowerState()) {
-        return digitalRead(_pin_index) == POWER_ON_LEVEL;
+        if (_query_pin_index > 0) {
+            return digitalRead(_query_pin_index);
+        } else {
+            return digitalRead(_control_pin_index) == POWER_ON_LEVEL;
+        }
     } else {
         return default_value;
     }
@@ -68,23 +95,37 @@ MavESP8266PowerMgmt::isPowerOn(bool default_value) const
 
 //---------------------------------------------------------------------------------
 void 
-MavESP8266PowerMgmt::setPinIsActiveHigh(bool value)
+MavESP8266PowerMgmt::setControlPinIsActiveHigh(bool value)
 {
-    _is_active_high = value;
+    _control_pin_is_active_high = value;
 }
 
 //---------------------------------------------------------------------------------
 void
-MavESP8266PowerMgmt::setPinIndex(uint8_t index)
+MavESP8266PowerMgmt::setPulseLengthMsec(uint16_t value)
 {
-    _pin_index = index;
+    _pulse_length_msec = value;
+}
+
+//---------------------------------------------------------------------------------
+void
+MavESP8266PowerMgmt::setControlPinIndex(uint8_t index)
+{
+    _control_pin_index = index;
+}
+
+//---------------------------------------------------------------------------------
+void
+MavESP8266PowerMgmt::setQueryPinIndex(uint8_t index)
+{
+    _query_pin_index = index;
 }
 
 //---------------------------------------------------------------------------------
 bool
 MavESP8266PowerMgmt::supportsReadingPowerState() const
 {
-    return _pin_index > 0;    
+    return _query_pin_index > 0 || (_control_pin_index > 0 && _pulse_length_msec == 0);
 }
 
 
@@ -94,10 +135,15 @@ MavESP8266PowerMgmt::supportsReadingPowerState() const
 bool
 MavESP8266PowerMgmt::requestPowerOff()
 {
-    if (_pin_index == 0) {
+    if (_control_pin_index == 0) {
         return false;
+    } else if (shouldSendPulse()) {
+        if (isPowerOn(/* default = */ true)) {
+            startPulse();
+        }
+        return true;
     } else {
-        digitalWrite(_pin_index, POWER_OFF_LEVEL);
+        writeControlPin(POWER_OFF_LEVEL);
         return true;
     }
 }
@@ -108,10 +154,67 @@ MavESP8266PowerMgmt::requestPowerOff()
 bool
 MavESP8266PowerMgmt::requestPowerOn()
 {
-    if (_pin_index == 0) {
+    if (_control_pin_index == 0) {
         return false;
-    } else {
-        digitalWrite(_pin_index, POWER_ON_LEVEL);
+    } else if (shouldSendPulse()) {
+        if (!isPowerOn(/* default = */ false)) {
+            startPulse();
+        }
         return true;
+    } else {
+        writeControlPin(POWER_ON_LEVEL);
+        return true;
+    }
+}
+
+//---------------------------------------------------------------------------------
+//-- Returns whether the power management module responds to pulses instead of
+//-- simply setting the GPIO pin to low or high
+bool
+MavESP8266PowerMgmt::shouldSendPulse() const
+{
+    return _control_pin_index > 0 && _pulse_length_msec > 0;
+}
+
+//---------------------------------------------------------------------------------
+//-- Starts sending a new pulse on the GPIO pin
+void
+MavESP8266PowerMgmt::startPulse()
+{
+    // TODO(ntamas): how shall we handle if another pulse is already in progress?
+    if (_control_pin_index == 0) {
+        return;
+    }
+
+    writeControlPin(ACTIVE_LEVEL);
+    _pulse_ends_at = millis() + static_cast<uint32_t>(_pulse_length_msec);
+    _sending_pulse = true;
+}
+
+//---------------------------------------------------------------------------------
+//-- Finishes the current pulse on the GPIO pin
+void
+MavESP8266PowerMgmt::finishPulse()
+{
+    if (!_sending_pulse) {
+        return;
+    }
+
+    writeControlPin(PASSIVE_LEVEL);
+    _pulse_ends_at = 0;
+    _sending_pulse = false;
+}
+
+void
+MavESP8266PowerMgmt::writeControlPin(bool value, bool log)
+{
+    if (_control_pin_index == 0) {
+        return;
+    }
+
+    digitalWrite(_control_pin_index, value);
+
+    if (log) {
+        getWorld()->getLogger()->log("Power pin %s at %d\n", value ? "high": "low", millis());
     }
 }
