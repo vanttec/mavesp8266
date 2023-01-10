@@ -216,7 +216,7 @@ void setup() {
     //-- I'm getting bogus IP from the DHCP server. Broadcasting for now.
     gcs_ip[3] = 255;
     GCS.begin(&Vehicle, gcs_ip);
-    Vehicle.begin(&GCS);
+    Vehicle.begin(&GCS, localIP[3]);
     //-- Initialize Update Server
     updateServer.begin(&updateStatus);
 }

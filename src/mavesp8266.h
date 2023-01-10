@@ -84,6 +84,9 @@ class MavESP8266PowerMgmt;
 //-- we will attempt reading from the FC_POWER_CONTROL_PIN instead
 #define FC_POWER_QUERY_PIN          5
 
+//-- Uncomment this to simulate heartbeats even when the FC is powered down
+// #define SIMULATE_HEARTBEATS_WHEN_POWERED_OFF
+
 //-- TODO: This needs to come from the build system
 #define MAVESP8266_VERSION_MAJOR    1
 #define MAVESP8266_VERSION_MINOR    2
