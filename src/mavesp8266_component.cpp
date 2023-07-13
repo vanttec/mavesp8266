@@ -390,7 +390,23 @@ MavESP8266Component::_handleCmdLongForFC(MavESP8266Bridge* sender, mavlink_comma
             // on. If the drone is already powered on, we report it as a success.
             // We never forward this message to the FC because it is not a valid
             // MAVLink message with this parameter.
-            result = getWorld()->getPowerMgmt()->requestPowerOn() ? MAV_RESULT_ACCEPTED : MAV_RESULT_UNSUPPORTED;
+            if (isPoweredOn) {
+                result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = getWorld()->getPowerMgmt()->requestPowerOn() ? MAV_RESULT_ACCEPTED : MAV_RESULT_UNSUPPORTED;
+            }
+            break;
+
+        case 126:
+            // The secret sauce: our own command code to request a drone to enter
+            // low-power mode. We treat it the same way as "shutdown" because
+            // shutdown is effectively only a low-power state (we cannot turn
+            // ourselves off).
+            if (isPoweredOn) {
+                result = getWorld()->getPowerMgmt()->requestPowerOff() ? MAV_RESULT_ACCEPTED : MAV_RESULT_UNSUPPORTED;
+            } else {
+                result = MAV_RESULT_ACCEPTED;
+            }
             break;
 
         default:
