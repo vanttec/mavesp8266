@@ -53,8 +53,17 @@ class MavESP8266UpdateImp : public MavESP8266Update {
 public:
     MavESP8266UpdateImp ()
         : _isUpdating(false)
+        , _rebootAt(0)
     {
 
+    }
+    void clearScheduledReboot ()
+    {
+        _rebootAt = 0;
+    }
+    void scheduleReboot (uint32_t delayMs)
+    {
+        _rebootAt = millis() + delayMs;
     }
     void updateStarted  ()
     {
@@ -68,9 +77,12 @@ public:
     {
         //-- TODO
     }
+    bool isRebootPending() { return _rebootAt != 0; }
     bool isUpdating     () { return _isUpdating; }
+    bool shouldReboot   () { return isRebootPending() && millis() > _rebootAt; }
 private:
     bool _isUpdating;
+    uint32_t _rebootAt;
 };
 
 
@@ -236,6 +248,10 @@ void loop() {
             Vehicle.readMessage();
         }
         Power.loop();
+    }
+    if (updateStatus.shouldReboot()) {
+        updateStatus.clearScheduledReboot();
+        ESP.restart();
     }
     updateServer.checkUpdates();
 }

@@ -186,6 +186,7 @@ public:
 class MavESP8266Update {
 public:
     virtual ~MavESP8266Update(){;}
+    virtual void scheduleReboot (uint32_t delayMs) = 0;
     virtual void updateStarted  () = 0;
     virtual void updateCompleted() = 0;
     virtual void updateError    () = 0;
