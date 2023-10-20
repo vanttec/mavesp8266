@@ -137,6 +137,11 @@ void setNoCacheHeaders() {
 }
 
 //---------------------------------------------------------------------------------
+void setStaticFileCacheHeaders() {
+    webServer.sendHeader("Cache-Control", "public, max-age=86400");
+}
+
+//---------------------------------------------------------------------------------
 void returnFail(String msg) {
     webServer.send(500, FPSTR(kTEXTPLAIN), msg + "\r\n");
 }
@@ -435,6 +440,7 @@ static void handle_getStatus()
 //---------------------------------------------------------------------------------
 static void handle_getStylesheet()
 {
+    setStaticFileCacheHeaders();
     webServer.send(200, FPSTR(kTEXTCSS), FPSTR(kSTYLESHEET));
 }
 
