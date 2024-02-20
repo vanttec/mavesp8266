@@ -43,8 +43,15 @@
 #include "mavesp8266_component.h"
 
 #include <ESP8266mDNS.h>
+#include <Adafruit_NeoPixel.h>
 
 #define GPIO02  2
+
+#define NUM_LEDS 64
+#define RGB_LED 0
+
+Adafruit_NeoPixel pixels(NUM_LEDS, 5, NEO_GRB + NEO_KHZ800);
+uint16_t hue = 0;
 
 //---------------------------------------------------------------------------------
 //-- HTTP Update Status
@@ -136,6 +143,13 @@ void reset_interrupt(){
 //-- Set things up
 void setup() {
     delay(1000);
+
+    pixels.begin();
+    for(int i = 0; i < NUM_LEDS; i++){
+        pixels.setPixelColor(i, pixels.Color(0, 255, 0));
+    }
+    pixels.show();
+
     Parameters.begin();
 #ifdef ENABLE_DEBUG
     //   We only use it for non debug because GPIO02 is used as a serial
@@ -204,11 +218,30 @@ void setup() {
     Vehicle.begin(&GCS);
     //-- Initialize Update Server
     updateServer.begin(&updateStatus);
+
+
+    pixels.begin();
+    for(int i = 0; i < NUM_LEDS; i++){
+        pixels.setPixelColor(i, pixels.Color(255, 0, 0));
+    }
+    pixels.show();
+    delay(1000);
 }
+
+bool test = false;
 
 //---------------------------------------------------------------------------------
 //-- Main Loop
 void loop() {
+
+    auto color = Adafruit_NeoPixel::ColorHSV(hue++, 100, 255);
+    pixels.clear();
+    for(int i = 0; i < NUM_LEDS; i++){
+        pixels.setPixelColor(i, Adafruit_NeoPixel::Color(test ? 0 : 255, 255, 0));
+    }
+    pixels.show();
+    test = !test;
+
     if(!updateStatus.isUpdating()) {
         if (Component.inRawMode()) {
             GCS.readMessageRaw();
