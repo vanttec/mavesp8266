@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright (c) 2015, 2016 Gus Grubba. All rights reserved.
+ * Copyright (c) 2022, CollMot Robotics Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,40 +29,46 @@
  ****************************************************************************/
 
 /**
- * @file mavesp8266_vehicle.h
+ * @file mavesp8266_power_mgmt.h
  * ESP8266 Wifi AP, MavLink UART/UDP Bridge
  *
- * @author Gus Grubba <mavlink@grubba.com>
+ * @author Tamas Nepusz <tamas@collmot.com>
  */
 
-#ifndef MAVESP8266_VEHICLE_H
-#define MAVESP8266_VEHICLE_H
+#ifndef MAVESP8266_POWER_MGMT_H
+#define MAVESP8266_POWER_MGMT_H
 
 #include "mavesp8266.h"
 
-class MavESP8266Vehicle : public MavESP8266Bridge {
+class MavESP8266PowerMgmt {
 public:
-    MavESP8266Vehicle();
+    MavESP8266PowerMgmt();
 
-    void    begin           (MavESP8266Bridge* forwardTo, uint8_t system_id = 0, uint8_t component_id = 0);
-    void    readMessage     ();
-    void    readMessageRaw  ();
-    int     sendMessage     (mavlink_message_t* message);
-    int     sendMessageRaw   (uint8_t *buffer, int len);
-    linkStatus* getStatus   ();
-    bool    isArmed         ();
+public:
+    void begin();
+    void loop();
+    bool isPowerOn(bool default_value = true) const;
+    bool requestPowerOff();
+    bool requestPowerOn();
+    void setControlPinIndex(uint8_t index);
+    void setControlPinIsActiveHigh(bool value);
+    void setPulseLengthMsec(uint16_t value);
+    void setQueryPinIndex(uint8_t index);
+    bool supportsReadingPowerState() const;
 
 private:
-    void    _generateFakeHeartbeat();
-    bool    _readMessage    ();
-    void    _send_pending();
+    uint8_t _control_pin_index;
+    bool _control_pin_is_active_high;
+    uint8_t _query_pin_index;
+    uint16_t _pulse_length_msec;
+    bool _sending_pulse;
+    uint32_t _pulse_ends_at;
 
-private:
-    bool                    _armed;
-    unsigned long           _queue_time;
-    mavlink_message_t       _msg;
-    mavlink_message_t       _last_heartbeat_msg;
-    uint32_t                _last_fake_heartbeat_sent_at;
+    void startPulse();
+    void finishPulse();
+    bool shouldSendPulse() const;
+
+    void writeControlPin(bool value, bool log = true);
 };
 
 #endif

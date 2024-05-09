@@ -45,13 +45,18 @@ MavESP8266Vehicle::MavESP8266Vehicle()
 {
     _recv_chan = MAVLINK_COMM_0;
     _send_chan = MAVLINK_COMM_1;
+    _last_fake_heartbeat_sent_at = millis();
+    memset(&_last_heartbeat_msg, 0, sizeof(_last_heartbeat_msg));
 }
 
 //---------------------------------------------------------------------------------
 //-- Initialize
 void
-MavESP8266Vehicle::begin(MavESP8266Bridge* forwardTo)
+MavESP8266Vehicle::begin(MavESP8266Bridge* forwardTo, uint8_t system_id, uint8_t component_id)
 {
+    _system_id = system_id;
+    _component_id = component_id;
+
     MavESP8266Bridge::begin(forwardTo);
     //-- Start UART connected to UAS
     Serial.begin(getWorld()->getParameters()->getUartBaudRate());
@@ -79,11 +84,20 @@ MavESP8266Vehicle::readMessage()
         delay(0);
         _last_status_time = millis();
     }
+#ifdef SIMULATE_HEARTBEATS_WHEN_POWERED_OFF
+    //-- Generate fake heartbeats so the GCS can sense the presence of the
+    //-- drone even when the FC is powered down (1Hz)
+    if(!_heard_from && (millis() - _last_fake_heartbeat_sent_at > 1000)) {
+        delay(0);
+        _generateFakeHeartbeat();
+        _last_fake_heartbeat_sent_at = millis();
+    }
+#endif
 }
 
 void
 MavESP8266Vehicle::readMessageRaw() {
-    char buf[1024];
+    static uint8_t buf[1024];
     int buf_index = 0;
 
     while(Serial.available() && buf_index < 300)
@@ -91,13 +105,13 @@ MavESP8266Vehicle::readMessageRaw() {
         int result = Serial.read();
         if (result >= 0)
         {
-            buf[buf_index] = (char)result;
+            buf[buf_index] = result;
             buf_index++;
         }
     }
 
     if (buf_index > 0) {
-        _forwardTo->sendMessageRaw((uint8_t*)buf, buf_index);
+        _forwardTo->sendMessageRaw(buf, buf_index);
     }
 }
 
@@ -132,6 +146,14 @@ MavESP8266Vehicle::getStatus()
 {
     _status.queue_status = 0;
     return &_status;
+}
+
+//---------------------------------------------------------------------------------
+//-- Returns whether the UAS is likely to be armed
+bool
+MavESP8266Vehicle::isArmed()
+{
+    return _armed;
 }
 
 //---------------------------------------------------------------------------------
@@ -173,11 +195,28 @@ MavESP8266Vehicle::_readMessage()
                         _system_id      = _msg.sysid;
                         _seq_expected   = _msg.seq + 1;
                         _last_heartbeat = millis();
+                        _last_heartbeat_msg = _msg;
                     }
                 } else {
-                    if(_msg.msgid == MAVLINK_MSG_ID_HEARTBEAT)
+                    if(_msg.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
                         _last_heartbeat = millis();
+                        _last_heartbeat_msg = _msg;
+                    }
                     _checkLinkErrors(&_msg);
+                }
+
+                //-- Update the status of the 'armed' flag if we have a heartbeat
+                if (_msg.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
+                    uint8_t system_status = mavlink_msg_heartbeat_get_system_status(&_msg);
+                    uint8_t base_mode = mavlink_msg_heartbeat_get_base_mode(&_msg);
+                    _armed = (
+                        (
+                            system_status == MAV_STATE_ACTIVE &&
+                            (base_mode & MAV_MODE_FLAG_SAFETY_ARMED) != 0
+                        ) ||
+                        system_status == MAV_STATE_CRITICAL ||
+                        system_status == MAV_STATE_EMERGENCY
+                    );
                 }
 
                 if (msgReceived == MAVLINK_FRAMING_BAD_CRC) {
@@ -207,9 +246,40 @@ MavESP8266Vehicle::_readMessage()
     if(!msgReceived) {
         if(_heard_from && (millis() - _last_heartbeat) > HEARTBEAT_TIMEOUT) {
             _heard_from = false;
+            _last_fake_heartbeat_sent_at = _last_heartbeat;
             getWorld()->getLogger()->log("Heartbeat timeout from Vehicle\n");
         }
     }
     return msgReceived;
 }
 
+//---------------------------------------------------------------------------------
+//-- Generate fake heartbeat message on behalf of the vehicle when the FC is off
+void
+MavESP8266Vehicle::_generateFakeHeartbeat()
+{
+    mavlink_message_t msg;
+
+    if (_system_id == 0)
+    {
+        // We haven't seen a heartbeat from the vehicle yet and we haven't been
+        // provided an "assumed" system ID from the outside so we don't know
+        // what the system ID should be in the generated packet.
+        return;
+    }
+
+    //-- Build message
+    mavlink_msg_heartbeat_pack_chan(
+        _system_id > 0 ? _system_id : 1,
+        _component_id > 0 ? _component_id : 1,
+        _forwardTo->_send_chan,
+        &msg,
+        mavlink_msg_heartbeat_get_type(&_last_heartbeat_msg),
+        mavlink_msg_heartbeat_get_autopilot(&_last_heartbeat_msg),
+        0,
+        0,
+        MAV_STATE_FLIGHT_TERMINATION
+    );
+
+    _forwardTo->sendMessage(&msg);
+}

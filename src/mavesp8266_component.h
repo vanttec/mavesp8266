@@ -49,6 +49,9 @@ public:
     bool inRawMode            ();
     void resetRawMode         () { _in_raw_mode_time = millis(); }
 
+    void enableRawMode        () { _enterRawMode(); }
+    void disableRawMode       () { _exitRawMode(); }
+
 private:
     void    _sendStatusMessage      (MavESP8266Bridge* sender, uint8_t type, const char* text);
     void    _handleParamSet         (MavESP8266Bridge* sender, mavlink_param_set_t* param);
@@ -58,8 +61,11 @@ private:
     void    _sendParameter          (MavESP8266Bridge* sender, const char* id, uint32_t value, uint16_t index);
 
     void    _handleCmdLong          (MavESP8266Bridge* sender, mavlink_command_long_t* cmd, uint8_t compID);
-
+    bool    _handleCmdLongForFC     (MavESP8266Bridge* sender, mavlink_command_long_t* cmd, uint8_t compID);
     void    _wifiReboot             (MavESP8266Bridge* sender);
+
+    void    _enterRawMode           (mavlink_command_long_t* cmd = 0, uint8_t compID = 0);
+    void    _exitRawMode            ();
 
     bool            _in_raw_mode;
     unsigned long   _in_raw_mode_time;

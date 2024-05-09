@@ -54,6 +54,7 @@ class MavESP8266Parameters;
 class MavESP8266Component;
 class MavESP8266Vehicle;
 class MavESP8266GCS;
+class MavESP8266PowerMgmt;
 
 #define DEFAULT_UART_SPEED          921600
 #define DEFAULT_WIFI_CHANNEL        11
@@ -61,6 +62,30 @@ class MavESP8266GCS;
 #define DEFAULT_UDP_CPORT           14555
 
 #define HEARTBEAT_TIMEOUT           10 * 1000
+
+//-- Set this to the GPIO output pin that can be used to turn the flight
+//-- controller on or off. Do not define it if you do not have such a GPIO pin.
+#define FC_POWER_CONTROL_PIN        4
+
+// -- Set this to HIGH or LOW depending on whether the flight controller is
+// -- powered on when the pin is HIGH or LOW. When the power management module
+// -- is pulse-triggered, set this value to HIGH if you want to keep the line
+// -- low in general and pull it to high during the pulse that triggers the
+// -- power management module.
+#define FC_POWER_CONTROL_PIN_ACTIVE_STATE  LOW
+
+// -- Set this value to nonzero to instruct the firmware to send a pulse with
+// -- the given minimum length if the FC power needs to be toggled.
+#define FC_POWER_CONTROL_PIN_PULSE_LENGTH_MSEC 400
+
+//-- Set this to the GPIO input pin that can be used to decide whether the
+//-- flight controller is powered by reading from it. Do not define it if you
+//-- do not have such a GPIO pin - in this case, if the pulse length is zero,
+//-- we will attempt reading from the FC_POWER_CONTROL_PIN instead
+#define FC_POWER_QUERY_PIN          5
+
+//-- Uncomment this to simulate heartbeats even when the FC is powered down
+// #define SIMULATE_HEARTBEATS_WHEN_POWERED_OFF
 
 //-- TODO: This needs to come from the build system
 #define MAVESP8266_VERSION_MAJOR    1
@@ -153,6 +178,7 @@ public:
     virtual MavESP8266Vehicle*      getVehicle      () = 0;
     virtual MavESP8266GCS*          getGCS          () = 0;
     virtual MavESP8266Log*          getLogger       () = 0;
+    virtual MavESP8266PowerMgmt*    getPowerMgmt    () = 0;
 };
 
 //---------------------------------------------------------------------------------
@@ -160,6 +186,7 @@ public:
 class MavESP8266Update {
 public:
     virtual ~MavESP8266Update(){;}
+    virtual void scheduleReboot (uint32_t delayMs) = 0;
     virtual void updateStarted  () = 0;
     virtual void updateCompleted() = 0;
     virtual void updateError    () = 0;

@@ -40,6 +40,7 @@
 #include "mavesp8266_vehicle.h"
 #include "mavesp8266_httpd.h"
 #include "mavesp8266_component.h"
+#include "mavesp8266_power_mgmt.h"
 
 #include <ESP8266mDNS.h>
 
@@ -51,8 +52,17 @@ class MavESP8266UpdateImp : public MavESP8266Update {
 public:
     MavESP8266UpdateImp ()
         : _isUpdating(false)
+        , _rebootAt(0)
     {
 
+    }
+    void clearScheduledReboot ()
+    {
+        _rebootAt = 0;
+    }
+    void scheduleReboot (uint32_t delayMs)
+    {
+        _rebootAt = millis() + delayMs;
     }
     void updateStarted  ()
     {
@@ -66,9 +76,12 @@ public:
     {
         //-- TODO
     }
+    bool isRebootPending() { return _rebootAt != 0; }
     bool isUpdating     () { return _isUpdating; }
+    bool shouldReboot   () { return isRebootPending() && millis() > _rebootAt; }
 private:
     bool _isUpdating;
+    uint32_t _rebootAt;
 };
 
 
@@ -82,6 +95,7 @@ MavESP8266Vehicle       Vehicle;
 MavESP8266Httpd         updateServer;
 MavESP8266UpdateImp     updateStatus;
 MavESP8266Log           Logger;
+MavESP8266PowerMgmt     Power;
 
 //---------------------------------------------------------------------------------
 //-- Accessors
@@ -92,6 +106,7 @@ public:
     MavESP8266Vehicle*      getVehicle      () { return &Vehicle;       }
     MavESP8266GCS*          getGCS          () { return &GCS;           }
     MavESP8266Log*          getLogger       () { return &Logger;        }
+    MavESP8266PowerMgmt*    getPowerMgmt    () { return &Power;         }
 };
 
 MavESP8266WorldImp      World;
@@ -147,6 +162,18 @@ void setup() {
 #endif
     Logger.begin(2048);
 
+#ifdef FC_POWER_CONTROL_PIN
+    //-- Initialize power control pin (if there is one)
+    Power.setControlPinIsActiveHigh(FC_POWER_CONTROL_PIN_ACTIVE_STATE == HIGH);
+    Power.setControlPinIndex(FC_POWER_CONTROL_PIN);
+    Power.setPulseLengthMsec(FC_POWER_CONTROL_PIN_PULSE_LENGTH_MSEC);
+#endif
+#ifdef FC_POWER_QUERY_PIN
+    //-- Initialize power query pin (if there is one)
+    Power.setQueryPinIndex(FC_POWER_QUERY_PIN);
+#endif
+    Power.begin();
+
     DEBUG_LOG("\nConfiguring access point...\n");
     DEBUG_LOG("Free Sketch Space: %u\n", ESP.getFreeSketchSpace());
 
@@ -200,7 +227,7 @@ void setup() {
     //-- I'm getting bogus IP from the DHCP server. Broadcasting for now.
     gcs_ip[3] = 255;
     GCS.begin(&Vehicle, gcs_ip);
-    Vehicle.begin(&GCS);
+    Vehicle.begin(&GCS, localIP[3]);
     //-- Initialize Update Server
     updateServer.begin(&updateStatus);
 }
@@ -219,6 +246,11 @@ void loop() {
             delay(0);
             Vehicle.readMessage();
         }
+        Power.loop();
+    }
+    if (updateStatus.shouldReboot()) {
+        updateStatus.clearScheduledReboot();
+        ESP.restart();
     }
     updateServer.checkUpdates();
 }

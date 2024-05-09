@@ -36,20 +36,55 @@
  */
 
 #include "mavesp8266.h"
+#include "mavesp8266_component.h"
 #include "mavesp8266_httpd.h"
 #include "mavesp8266_parameters.h"
 #include "mavesp8266_gcs.h"
 #include "mavesp8266_vehicle.h"
+#include "mavesp8266_power_mgmt.h"
 
 #include <ESP8266WebServer.h>
 
 const char PROGMEM kTEXTPLAIN[]  = "text/plain";
 const char PROGMEM kTEXTHTML[]   = "text/html";
+const char PROGMEM kTEXTCSS[]    = "text/css";
 const char PROGMEM kACCESSCTL[]  = "Access-Control-Allow-Origin";
-const char PROGMEM kUPLOADFORM[] = "<h1><a href='/'>MAVLink WiFi Bridge</a></h1><form method='POST' action='/upload' enctype='multipart/form-data'><input type='file' name='update'><br><input type='submit' value='Update'></form><p>Update will take about 30 seconds, and you will need to reconnect<br>If parameters are not compatible then the default SSID of ArduPilot with password ardupilot will be used";
-const char PROGMEM kHEADER[]     = "<!doctype html><html><head><title>Vanttec MavLink Bridge</title></head><body><h1><a href='/'>Vanttec MAVLink WiFi Bridge</a></h1>";
+const char PROGMEM kUPLOADFORM[] =
+    "<form method=\"POST\" action=\"/upload\" enctype=\"multipart/form-data\">\n"
+    "<p><label>Firmware to upload</label>\n"
+    "<input type=\"file\" name=\"update\" /></p>\n"
+    "<input type=\"submit\" value=\"Update\" />\n"
+    "</form>\n"
+    "<p>Update will take about 30 seconds, and you will need to reconnect.</p>\n"
+    "<p>If parameters are not compatible then the default SSID of <code>ArduPilot</code>\n"
+    "with password <code>ardupilot</code> will be used.</p>\n";
+const char PROGMEM kHEADER[]     =
+    "<!doctype html><html><head><meta charset=\"UTF-8\"><title>MavLink Bridge</title>"
+    "<link rel=\"stylesheet\" href=\"/style.css\"></head>"
+    "<body>\n"
+    "<header>\n"
+    "<h1>Vanttec MAVLink WiFi Bridge</h1>\n"
+    "<nav>\n"
+    "<a href=\"/\">Home</a>\n"
+    "<a href=\"/getstatus\">Status</a>\n"
+    "<a href=\"/setup\">Setup</a>\n"
+    "<a href=\"/getparameters\">Parameters</a>\n"
+    "<a href=\"/update\">Update</a>\n"
+    "<a href=\"/reboot\">Reboot</a>\n"
+    "</nav>\n"
+    "</header>\n"
+    "<main>\n";
+const char PROGMEM kFOOTER[]     =
+    "</main>\n"
+    "<footer>\n"
+    "<p>This page uses <a href=\"https://simplecss.org/\">Simple.css</a> by "
+    "<a href=\"https://kevq.uk\">Kev Quirk</a></p>\n"
+    "</footer></body></html>";
 const char PROGMEM kBADARG[]     = "BAD ARGS";
 const char PROGMEM kAPPJSON[]    = "application/json";
+const char PROGMEM kSTYLESHEET[] = ":root{--sans-font:-apple-system,BlinkMacSystemFont,\"Avenir Next\",Avenir,\"Nimbus Sans L\",Roboto,\"Noto Sans\",\"Segoe UI\",Arial,Helvetica,\"Helvetica Neue\",sans-serif;--mono-font:Consolas,Menlo,Monaco,\"Andale Mono\",\"Ubuntu Mono\",monospace;--bg:#fff;--accent-bg:#f5f7ff;--text:#212121;--text-light:#585858;--border:#898EA4;--accent:#0d47a1;--code:#d81b60;--preformatted:#444;--marked:#ffdd33;--disabled:#efefef}@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#212121;--accent-bg:#2b2b2b;--text:#dcdcdc;--text-light:#ababab;--accent:#ffb300;--code:#f06292;--preformatted:#ccc;--disabled:#111}img,video{opacity:.8}}*,::after,::before{box-sizing:border-box}input,progress,select,textarea{appearance:none;-webkit-appearance:none;-moz-appearance:none}html{font-family:var(--sans-font);scroll-behavior:smooth}body{color:var(--text);background-color:var(--bg);font-size:1.15rem;line-height:1.5;display:grid;grid-template-columns:1fr min(45rem,90%) 1fr;margin:0}body>*{grid-column:2}body>header{background-color:var(--accent-bg);border-bottom:1px solid var(--border);text-align:center;padding:0 .5rem 2rem .5rem;grid-column:1/-1}body>header h1{max-width:1200px;margin:1rem auto}body>header p{max-width:40rem;margin:1rem auto}main{padding-top:1.5rem}body>footer{margin-top:4rem;padding:2rem 1rem 1.5rem 1rem;color:var(--text-light);font-size:.9rem;text-align:center;border-top:1px solid var(--border)}h1{font-size:3rem}h2{font-size:2.6rem;margin-top:3rem}h3{font-size:2rem;margin-top:3rem}h4{font-size:1.44rem}h5{font-size:1.15rem}h6{font-size:.96rem}h1,h2,h3,h4,h5,h6,p{overflow-wrap:break-word}h1,h2,h3{line-height:1.1}@media only screen and (max-width:720px){h1{font-size:2.5rem}h2{font-size:2.1rem}h3{font-size:1.75rem}h4{font-size:1.25rem}}a,a:visited{color:var(--accent)}a:hover{text-decoration:none}[role=button],button,input[type=button],input[type=reset],input[type=submit],label[type=button]{border:none;border-radius:5px;background-color:var(--accent);font-size:1rem;color:var(--bg);padding:.7rem .9rem;margin:.5rem 0}[role=button][aria-disabled=true],button[disabled],input[type=button][disabled],input[type=checkbox][disabled],input[type=radio][disabled],input[type=reset][disabled],input[type=submit][disabled],select[disabled]{cursor:not-allowed}button[disabled],input:disabled,select:disabled,textarea:disabled{cursor:not-allowed;background-color:var(--disabled);color:var(--text-light)}input[type=range]{padding:0}abbr[title]{cursor:help;text-decoration-line:underline;text-decoration-style:dotted}[role=button]:not([aria-disabled=true]):hover,button:enabled:hover,input[type=button]:enabled:hover,input[type=reset]:enabled:hover,input[type=submit]:enabled:hover,label[type=button]:hover{filter:brightness(1.4);cursor:pointer}button:focus-visible:where(:enabled,[role=button]:not([aria-disabled=true])),input:enabled:focus-visible:where([type=submit],[type=reset],[type=button]){outline:2px solid var(--accent);outline-offset:1px}header>nav{font-size:1rem;line-height:2;padding:1rem 0 0 0}header>nav ol,header>nav ul{align-content:space-around;align-items:center;display:flex;flex-direction:row;flex-wrap:wrap;justify-content:center;list-style-type:none;margin:0;padding:0}header>nav ol li,header>nav ul li{display:inline-block}header>nav a,header>nav a:visited{margin:0 .5rem 1rem .5rem;border:1px solid var(--border);border-radius:5px;color:var(--text);display:inline-block;padding:.1rem 1rem;text-decoration:none}header>nav a:hover{border-color:var(--accent);color:var(--accent);cursor:pointer}@media only screen and (max-width:720px){header>nav a{border:none;padding:0;text-decoration:underline;line-height:1}}aside,details,pre,progress{background-color:var(--accent-bg);border:1px solid var(--border);border-radius:5px;margin-bottom:1rem}aside{font-size:1rem;width:30%;padding:0 15px;margin-left:15px;float:right}@media only screen and (max-width:720px){aside{width:100%;float:none;margin-left:0}}article,fieldset{border:1px solid var(--border);padding:1rem;border-radius:5px;margin-bottom:1rem}article h2:first-child,section h2:first-child{margin-top:1rem}section{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:2rem 1rem;margin:3rem 0}section+section,section:first-child{border-top:0;padding-top:0}section:last-child{border-bottom:0;padding-bottom:0}details{padding:.7rem 1rem}summary{cursor:pointer;font-weight:700;padding:.7rem 1rem;margin:-.7rem -1rem;word-break:break-all}details[open]>summary+*{margin-top:0}details[open]>summary{margin-bottom:.5rem}details[open]>:last-child{margin-bottom:0}table{border-collapse:collapse;display:block;margin:1.5rem 0;overflow:auto;width:100%}td,th{border:1px solid var(--border);text-align:left;padding:.5rem}th{background-color:var(--accent-bg);font-weight:700}tr:nth-child(even){background-color:var(--accent-bg)}table caption{font-weight:700;margin-bottom:.5rem}input,select,textarea{font-size:inherit;font-family:inherit;padding:.5rem;margin-bottom:.5rem;color:var(--text);background-color:var(--bg);border:1px solid var(--border);border-radius:5px;box-shadow:none;max-width:100%;display:inline-block}label{display:block}textarea:not([cols]){width:100%}select:not([multiple]){background-image:linear-gradient(45deg,transparent 49%,var(--text) 51%),linear-gradient(135deg,var(--text) 51%,transparent 49%);background-position:calc(100% - 15px),calc(100% - 10px);background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:25px}input[type=checkbox],input[type=radio]{vertical-align:middle;position:relative;width:min-content}input[type=checkbox]+label,input[type=radio]+label{display:inline-block}input[type=radio]{border-radius:100%}input[type=checkbox]:checked,input[type=radio]:checked{background-color:var(--accent)}input[type=checkbox]:checked::after{content:\" \";width:.18em;height:.32em;border-radius:0;position:absolute;top:.05em;left:.17em;background-color:transparent;border-right:solid var(--bg) .08em;border-bottom:solid var(--bg) .08em;font-size:1.8em;transform:rotate(45deg)}input[type=radio]:checked::after{content:\" \";width:.25em;height:.25em;border-radius:100%;position:absolute;top:.125em;background-color:var(--bg);left:.125em;font-size:32px}@media only screen and (max-width:720px){input,select,textarea{width:100%}}input[type=color]{height:2.5rem;padding:.2rem}input[type=file]{border:0}hr{border:none;height:1px;background:var(--border);margin:1rem auto}mark{padding:2px 5px;border-radius:4px;background-color:var(--marked)}img,video{max-width:100%;height:auto;border-radius:5px}figure{margin:0;text-align:center}figcaption{font-size:.9rem;color:var(--text-light);margin-bottom:1rem}blockquote{margin:2rem 0 2rem 2rem;padding:.4rem .8rem;border-left:.35rem solid var(--accent);color:var(--text-light);font-style:italic}cite{font-size:.9rem;color:var(--text-light);font-style:normal}dt{color:var(--text-light)}code,kbd,pre,pre span,samp{font-family:var(--mono-font);color:var(--code)}kbd{color:var(--preformatted);border:1px solid var(--preformatted);border-bottom:3px solid var(--preformatted);border-radius:5px;padding:.1rem .4rem}pre{padding:1rem 1.4rem;max-width:100%;overflow:auto;color:var(--preformatted)}pre code{color:var(--preformatted);background:0 0;margin:0;padding:0}progress{width:100%}progress:indeterminate{background-color:var(--accent-bg)}progress::-webkit-progress-bar{border-radius:5px;background-color:var(--accent-bg)}progress::-webkit-progress-value{border-radius:5px;background-color:var(--accent)}progress::-moz-progress-bar{border-radius:5px;background-color:var(--accent);transition-property:width;transition-duration:.3s}progress:indeterminate::-moz-progress-bar{background-color:var(--accent-bg)}.notice{background:var(--accent-bg);border:2px solid var(--border);border-radius:5px;padding:1.5rem;margin:2rem 0;}";
+
+const char PROGMEM kREBOOTING[]  = "<p class=\"notice\">Rebooting, please wait...</p>\n";
 
 const char* kBAUD       = "baud";
 const char* kPWD        = "pwd";
@@ -88,6 +123,8 @@ const char* kFlashMaps[7] = {
 static uint32_t flash = 0;
 static char paramCRC[12] = {""};
 
+static void scheduleReboot(uint32_t delayMs);
+
 ESP8266WebServer    webServer(80);
 MavESP8266Update*   updateCB    = NULL;
 bool                started     = false;
@@ -97,6 +134,11 @@ void setNoCacheHeaders() {
     webServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     webServer.sendHeader("Pragma", "no-cache");
     webServer.sendHeader("Expires", "0");
+}
+
+//---------------------------------------------------------------------------------
+void setStaticFileCacheHeaders() {
+    webServer.sendHeader("Cache-Control", "public, max-age=86400");
 }
 
 //---------------------------------------------------------------------------------
@@ -111,9 +153,14 @@ void respondOK() {
 
 //---------------------------------------------------------------------------------
 void handle_update() {
+    String message = FPSTR(kHEADER);
+
+    message += FPSTR(kUPLOADFORM);
+    message += FPSTR(kFOOTER);
+
     webServer.sendHeader("Connection", "close");
     webServer.sendHeader(FPSTR(kACCESSCTL), "*");
-    webServer.send(200, FPSTR(kTEXTHTML), FPSTR(kUPLOADFORM));
+    webServer.send(200, FPSTR(kTEXTHTML), message);
 }
 
 //---------------------------------------------------------------------------------
@@ -124,7 +171,7 @@ void handle_upload() {
     if(updateCB) {
         updateCB->updateCompleted();
     }
-    ESP.restart();
+    scheduleReboot(500);
 }
 
 //---------------------------------------------------------------------------------
@@ -187,11 +234,11 @@ void handle_upload_status() {
 void handle_getParameters()
 {
     String message = FPSTR(kHEADER);
-    message += "<p>Parameters</p><table><tr><td width=\"240\">Name</td><td>Value</td></tr>";
+    message += "<h2>Parameters</h2><table><thead><tr><td width=\"240\">Name</td><td>Value</td></tr></thead><tbody>";
     for(int i = 0; i < MavESP8266Parameters::ID_COUNT; i++) {
-        message += "<tr><td>";
+        message += "<tr><td><code>";
         message += getWorld()->getParameters()->getAt(i)->id;
-        message += "</td>";
+        message += "</code></td>";
         unsigned long val = 0;
         if(getWorld()->getParameters()->getAt(i)->type == MAV_PARAM_TYPE_UINT32)
             val = (unsigned long)*((uint32_t*)getWorld()->getParameters()->getAt(i)->value);
@@ -203,8 +250,8 @@ void handle_getParameters()
         message += val;
         message += "</td></tr>";
     }
-    message += "</table>";
-    message += "</body>";
+    message += "</tbody></table>";
+    message += FPSTR(kFOOTER);
     webServer.send(200, FPSTR(kTEXTHTML), message);
 }
 
@@ -212,39 +259,32 @@ void handle_getParameters()
 static void handle_root()
 {
     String message = FPSTR(kHEADER);
-    message += "Version: ";
+    message += "<dl><dt>\n";
+    message += "Version</dt><dd>";
     char vstr[30];
     snprintf(vstr, sizeof(vstr), "%u.%u.%u", MAVESP8266_VERSION_MAJOR, MAVESP8266_VERSION_MINOR, MAVESP8266_VERSION_BUILD);
     message += vstr;
-    message += "<br>\n";
-    message += "Git Version: ";
+    message += "</dd><dt>\n";
+    message += "Git Version</dt><dd>";
     message += GIT_VERSION_STRING;
-    message += "<br>\n";
-    message += "Build Date: ";
+    message += "</dd><dt>\n";
+    message += "Build Date</dt><dd>";
     message += BUILD_DATE_STRING;
     message += " ";
     message += BUILD_TIME_STRING;
-    message += "<br>\n";
-    message += "Board: ";
+    message += "</dd><dt>\n";
+    message += "Board</dt><dd>";
     message += BOARD_STRING;
-    message += "<p>\n";
-    message += "<ul>\n";
-    message += "<li><a href='/getstatus'>Get Status</a>\n";
-    message += "<li><a href='/setup'>Setup</a>\n";
-    message += "<li><a href='/getparameters'>Get Parameters</a>\n";
-    message += "<li><a href='/update'>Update Firmware</a>\n";
-    message += "<li><a href='/reboot'>Reboot</a>\n";
-    message += "</ul>\n";
-    message += "<hr>\n";
+    message += "</dl>\n";
     message += "<h2>Documentation</h2>\n";
-    message += "(requires internet access)<br>\n";
+    message += "<p>(requires internet access)</p>\n";
     message += "<ul>\n";
     message += "<li><a href='http://ardupilot.org'>ArduPilot Website</a>\n";
+    message += "<li><a href='http://skybrush.io'>Skybrush Website</a>\n";
     message += "<li><a href='http://ardupilot.org/copter/docs/common-esp8266-telemetry.html'>ESP8266 WiFi Documentation</a>\n";
-    message += "<li><a href='https://github.com/ArduPilot/mavesp8266'>ESP8266 Source Code</a>\n";
-    message += "<li><a href='http://firmware.ardupilot.org/Tools/MAVESP8266/'>ESP8266 Firmware Updates</a>\n";
+    message += "<li><a href='https://github.com/skybrush-io/mavesp8266'>ESP8266 Source Code</a>\n";
     message += "</ul>\n";
-    message += "</body>";
+    message += FPSTR(kFOOTER);
     setNoCacheHeaders();
     webServer.send(200, FPSTR(kTEXTHTML), message);
 }
@@ -253,7 +293,7 @@ static void handle_root()
 static void handle_setup()
 {
     String message = FPSTR(kHEADER);
-    message += "<h1>Setup</h1>\n";
+    message += "<h2>Setup</h2>\n";
     message += "<form action='/setparameters' method='post'>\n";
 
     message += "WiFi Mode:&nbsp;";
@@ -349,7 +389,7 @@ static void handle_getStatus()
     linkStatus* gcsStatus = getWorld()->getGCS()->getStatus();
     linkStatus* vehicleStatus = getWorld()->getVehicle()->getStatus();
     String message = FPSTR(kHEADER);
-    message += "<p>Comm Status</p><table><tr><td width=\"240\">Packets Received from GCS</td><td>";
+    message += "<h2>Comm Status</h2><table><tbody><tr><td width=\"420\">Packets Received from GCS</td><td>";
     message += gcsStatus->packets_received;
     message += "</td></tr><tr><td>Packets Sent to GCS</td><td>";
     message += gcsStatus->packets_sent;
@@ -367,12 +407,12 @@ static void handle_getStatus()
     message += vehicleStatus->parse_errors;
     message += "</td></tr><tr><td>Radio Messages</td><td>";
     message += gcsStatus->radio_status_sent;
-    message += "</td></tr></table>";
-    message += "<p>System Status</p><table>\n";
-    message += "<tr><td width=\"240\">Flash Size</td><td>";
+    message += "</td></tr></tbody></table>";
+    message += "<h2>System Status</h2><table><tbody>\n";
+    message += "<tr><td width=\"420\">Flash Size</td><td>";
     message += ESP.getFlashChipRealSize();
     message += "</td></tr>\n";
-    message += "<tr><td width=\"240\">Flash Available</td><td>";
+    message += "<tr><td>Flash Available</td><td>";
     message += flash;
     message += "</td></tr>\n";
     message += "<tr><td>RAM Left</td><td>";
@@ -381,10 +421,27 @@ static void handle_getStatus()
     message += "<tr><td>Parameters CRC</td><td>";
     message += paramCRC;
     message += "</td></tr>\n";
-    message += "</table>";
-    message += "</body>";
+    message += "<tr><td>Raw mode</td><td>";
+    message += getWorld()->getComponent()->inRawMode() ? "on" : "off";
+
+    if (getWorld()->getPowerMgmt()->supportsReadingPowerState()) {
+        message += "</td></tr>\n";
+        message += "<tr><td>Vehicle power</td><td>";
+        message += getWorld()->getPowerMgmt()->isPowerOn() ? "on" : "off";
+    }
+
+    message += "</td></tr>\n";
+    message += "</tbody></table>";
+    message += FPSTR(kFOOTER);
     setNoCacheHeaders();
     webServer.send(200, FPSTR(kTEXTHTML), message);
+}
+
+//---------------------------------------------------------------------------------
+static void handle_getStylesheet()
+{
+    setStaticFileCacheHeaders();
+    webServer.send(200, FPSTR(kTEXTCSS), FPSTR(kSTYLESHEET));
 }
 
 //---------------------------------------------------------------------------------
@@ -542,9 +599,27 @@ void handle_setParameters()
         //-- Send new parameters back
         handle_getParameters();
         if(reboot) {
-            delay(100);
-            ESP.restart();
+            scheduleReboot(100);
         }
+    } else
+        returnFail(kBADARG);
+}
+
+//---------------------------------------------------------------------------------
+void handle_rawMode()
+{
+    if(webServer.args() == 0) {
+        handle_getStatus();
+        return;
+    }
+
+    if(webServer.hasArg(kMODE)) {
+        if (webServer.arg(kMODE).toInt()) {
+            getWorld()->getComponent()->enableRawMode();
+        } else {
+            getWorld()->getComponent()->disableRawMode();
+        }
+        handle_getStatus();
     } else
         returnFail(kBADARG);
 }
@@ -553,11 +628,13 @@ void handle_setParameters()
 static void handle_reboot()
 {
     String message = FPSTR(kHEADER);
-    message += "rebooting ...</body>\n";
+    message += FPSTR(kREBOOTING);
+    message += FPSTR(kFOOTER);
+
     setNoCacheHeaders();
     webServer.send(200, FPSTR(kTEXTHTML), message);
-    delay(500);
-    ESP.restart();    
+
+    scheduleReboot(500);
 }
 
 //---------------------------------------------------------------------------------
@@ -593,11 +670,13 @@ MavESP8266Httpd::begin(MavESP8266Update* updateCB_)
     webServer.on("/getparameters",  handle_getParameters);
     webServer.on("/setparameters",  handle_setParameters);
     webServer.on("/getstatus",      handle_getStatus);
+    webServer.on("/raw",            handle_rawMode);
     webServer.on("/reboot",         handle_reboot);
     webServer.on("/setup",          handle_setup);
     webServer.on("/info.json",      handle_getJSysInfo);
     webServer.on("/status.json",    handle_getJSysStatus);
     webServer.on("/log.json",       handle_getJLog);
+    webServer.on("/style.css",      handle_getStylesheet);
     webServer.on("/update",         handle_update);
     webServer.on("/upload",         HTTP_POST, handle_upload, handle_upload_status);
     webServer.onNotFound(           handle_notFound);
@@ -610,4 +689,16 @@ void
 MavESP8266Httpd::checkUpdates()
 {
     webServer.handleClient();
+}
+
+//---------------------------------------------------------------------------------
+//-- Schedule reboot on main loop
+static void scheduleReboot(uint32_t delayMs)
+{
+    if (updateCB) {
+        updateCB->scheduleReboot(delayMs);
+    } else {
+        delay(delayMs);
+        ESP.restart();
+    }
 }
