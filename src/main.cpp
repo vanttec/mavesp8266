@@ -34,7 +34,6 @@
  *
  * @author Gus Grubba <mavlink@grubba.com>
  */
-
 #include "mavesp8266.h"
 #include "mavesp8266_parameters.h"
 #include "mavesp8266_gcs.h"
