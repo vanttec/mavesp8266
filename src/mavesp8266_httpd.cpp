@@ -34,6 +34,7 @@
  *
  * @author Gus Grubba <mavlink@grubba.com>
  */
+#include <ESP8266WebServer.h>
 
 #include "mavesp8266.h"
 #include "mavesp8266_component.h"

@@ -40,9 +40,9 @@
 #include "mavesp8266.h"
 #include "mavesp8266_parameters.h"
 #include "crc.h"
-
-const char* kDEFAULT_SSID       = "ArduPilot";
-const char* kDEFAULT_PASSWORD   = "ardupilot";
+#define DEBUG
+const char* kDEFAULT_SSID       = "Vanttec_DS";
+const char* kDEFAULT_PASSWORD   = "droneswarm";
 
 //-- Reserved space for EEPROM persistence. A change in this will cause all values to reset to defaults.
 #define EEPROM_SPACE            32 * sizeof(uint32_t)
@@ -167,9 +167,20 @@ MavESP8266Parameters::resetToDefaults()
     _wifi_udp_hport    = DEFAULT_UDP_HPORT;
     _wifi_udp_cport    = DEFAULT_UDP_CPORT;
     _uart_baud_rate    = DEFAULT_UART_SPEED;
-    _wifi_ipsta        = 0;
-    _wifi_gatewaysta   = 0;
-    _wifi_subnetsta    = 0;
+
+    IPAddress gateway_ip;
+    gateway_ip.fromString("192.168.0.1");
+
+    IPAddress sta_ip;
+    sta_ip.fromString("192.168.0.10");
+
+    // TODO Configure drone subnet
+    IPAddress subnet_ip;
+    subnet_ip.fromString("255.255.255.0");
+
+    _wifi_ipsta        = sta_ip;
+    _wifi_gatewaysta   = gateway_ip;
+    _wifi_subnetsta    = subnet_ip;
     strncpy(_wifi_ssid,         kDEFAULT_SSID,      sizeof(_wifi_ssid));
     strncpy(_wifi_password,     kDEFAULT_PASSWORD,  sizeof(_wifi_password));
     strncpy(_wifi_ssidsta,      kDEFAULT_SSID,      sizeof(_wifi_ssidsta));

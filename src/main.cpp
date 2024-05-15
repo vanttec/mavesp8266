@@ -174,35 +174,53 @@ void setup() {
 #endif
     Power.begin();
 
+    DEBUG_LOG("Hello Vanttec!\n");
     DEBUG_LOG("\nConfiguring access point...\n");
     DEBUG_LOG("Free Sketch Space: %u\n", ESP.getFreeSketchSpace());
+    DEBUG_LOG("WiFi Mode: %u\n", Parameters.getWifiMode());
 
     WiFi.disconnect(true);
 
+    bool fallback = false;
     if(Parameters.getWifiMode() == WIFI_MODE_STA){
+        DEBUG_LOG("Connecting to: %s password: %s\n", Parameters.getWifiStaSsid(), Parameters.getWifiStaPassword());
         //-- Connect to an existing network
         WiFi.mode(WIFI_STA);
-        WiFi.config(Parameters.getWifiStaIP(), Parameters.getWifiStaGateway(), Parameters.getWifiStaSubnet(), 0U, 0U);
+
+        DEBUG_LOG("Sta IP: %s Gateway IP: %s Subnet: %s\n",
+         IPAddress(Parameters.getWifiStaIP()).toString().c_str(),
+         IPAddress(Parameters.getWifiStaGateway()).toString().c_str(),
+         IPAddress(Parameters.getWifiStaSubnet()).toString().c_str());
+        //WiFi.config(Parameters.getWifiStaIP(), Parameters.getWifiStaGateway(), Parameters.getWifiStaSubnet(), 0U, 0U);
         WiFi.begin(Parameters.getWifiStaSsid(), Parameters.getWifiStaPassword());
 
         //-- Wait a minute to connect
-        for(int i = 0; i < 120 && WiFi.status() != WL_CONNECTED; i++) {
+        while(WiFi.status() != WL_CONNECTED) {
             #ifdef ENABLE_DEBUG
-            Serial.print(".");
+            //DEBUG_LOG(".");
+            DEBUG_LOG("not connected: %u\n", WiFi.status());
             #endif
             delay(500);
         }
         if(WiFi.status() == WL_CONNECTED) {
+            DEBUG_LOG("Connected to access point\n");
             localIP = WiFi.localIP();
             WiFi.setAutoReconnect(true);
         } else {
             //-- Fall back to AP mode if no connection could be established
             WiFi.disconnect(true);
             Parameters.setWifiMode(WIFI_MODE_AP);
+            fallback = true;
         }
     }
 
     if(Parameters.getWifiMode() == WIFI_MODE_AP){
+        DEBUG_LOG("Starting access point\n");
+        if(fallback){
+            DEBUG_LOG("Using fallback to access point mode...\n");
+            Parameters.setWifiSsid("ardupilot_fallback");
+            Parameters.setWifiPassword("ardupilot");
+        }
         //-- Start AP
         WiFi.mode(WIFI_AP);
         WiFi.encryptionType(AUTH_WPA2_PSK);
@@ -211,8 +229,8 @@ void setup() {
         wait_for_client();
     }
 
-    //-- Boost power to Max
-    WiFi.setOutputPower(20.5);
+    //-- TODO  Boost power to Max
+    // WiFi.setOutputPower(20.5);
     //-- MDNS
     char mdsnName[256];
     sprintf(mdsnName, "MavEsp8266-%d",localIP[3]);
@@ -221,6 +239,10 @@ void setup() {
     //-- Initialize Comm Links
     DEBUG_LOG("Start WiFi Bridge\n");
     DEBUG_LOG("Local IP: %s\n", localIP.toString().c_str());
+    DEBUG_LOG("Sta IP: %s Gateway IP: %s Subnet: %s\n",
+         IPAddress(Parameters.getWifiStaIP()).toString().c_str(),
+         IPAddress(Parameters.getWifiStaGateway()).toString().c_str(),
+         IPAddress(Parameters.getWifiStaSubnet()).toString().c_str());
 
     Parameters.setLocalIPAddress(localIP);
     IPAddress gcs_ip(localIP);
@@ -230,6 +252,7 @@ void setup() {
     Vehicle.begin(&GCS, localIP[3]);
     //-- Initialize Update Server
     updateServer.begin(&updateStatus);
+    DEBUG_LOG("Started service.");
 }
 
 //---------------------------------------------------------------------------------
