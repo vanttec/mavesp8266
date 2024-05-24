@@ -43,7 +43,7 @@
 
 //-- Constants
 #define DEFAULT_WIFI_MODE       WIFI_MODE_STA
-#define DEFAULT_UART_SPEED      115200
+#define DEFAULT_UART_SPEED      500000
 #define DEFAULT_WIFI_CHANNEL    11
 #define DEFAULT_UDP_HPORT       14550
 #define DEFAULT_UDP_CPORT       14555

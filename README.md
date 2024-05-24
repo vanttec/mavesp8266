@@ -3,7 +3,7 @@
 ## Vanttec Changes
 - Parameters now default to connecting to `Vanttec_DS`.
     - Default IP will be `192.168.0.2`, must change before adding more devices to the network.
-    - Default baud rate is `115200`, should try increasing it.
+    - Default baud rate is `500000`, should try increasing it.
 
 ## Current Binary
 
