@@ -87,6 +87,9 @@ class MavESP8266PowerMgmt;
 //-- Uncomment this to simulate heartbeats even when the FC is powered down
 // #define SIMULATE_HEARTBEATS_WHEN_POWERED_OFF
 
+#define DEBUG_LED_PIN 4
+void toggle_debug_led();
+
 //-- TODO: This needs to come from the build system
 #define MAVESP8266_VERSION_MAJOR    1
 #define MAVESP8266_VERSION_MINOR    2
@@ -94,7 +97,7 @@ class MavESP8266PowerMgmt;
 #define MAVESP8266_VERSION          ((MAVESP8266_VERSION_MAJOR << 24) & 0xFF00000) | ((MAVESP8266_VERSION_MINOR << 16) & 0x00FF0000) | (MAVESP8266_VERSION_BUILD & 0xFFFF)
 
 //-- Debug sent out to Serial1 (GPIO02), which is TX only (no RX).
-#define ENABLE_DEBUG
+// #define ENABLE_DEBUG
 
 #ifdef ENABLE_DEBUG
 #define DEBUG_LOG(format, ...) do { getWorld()->getLogger()->log(format, ## __VA_ARGS__); } while(0)
@@ -172,6 +175,13 @@ private:
     uint32_t        _log_position; // Absolute position in the log since boot
 };
 
+class MavESP8266Leds {
+public:
+    MavESP8266Leds();
+    virtual void begin() = 0;
+    virtual void fill_leds(uint8_t r, uint8_t g, uint8_t b) = 0;
+};
+
 //---------------------------------------------------------------------------------
 //-- Accessors
 class MavESP8266World {
@@ -183,6 +193,7 @@ public:
     virtual MavESP8266GCS*          getGCS          () = 0;
     virtual MavESP8266Log*          getLogger       () = 0;
     virtual MavESP8266PowerMgmt*    getPowerMgmt    () = 0;
+    virtual MavESP8266Leds* getLeds() = 0; // TODO Leds should be optional.
 };
 
 //---------------------------------------------------------------------------------

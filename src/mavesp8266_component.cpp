@@ -128,6 +128,19 @@ MavESP8266Component::handleMessage(MavESP8266Bridge* sender, mavlink_message_t* 
               return true;
           }
       }
+  } else if(message->msgid == MAVLINK_MSG_ID_DEBUG_VECT) {
+    mavlink_debug_vect_t rgb_vec;
+    mavlink_msg_debug_vect_decode(message, &rgb_vec);
+    if(strcmp("rgb", rgb_vec.name) == 0){
+        // Received debug vec for LEDs.
+        toggle_debug_led();
+        getWorld()->getLeds()->fill_leds(
+            static_cast<uint8_t>(rgb_vec.x * 255), 
+            static_cast<uint8_t>(rgb_vec.y * 255),
+            static_cast<uint8_t>(rgb_vec.z * 255)
+        );
+        return true;
+    }
   }
 
   //-- Couldn't handle the message, pass on

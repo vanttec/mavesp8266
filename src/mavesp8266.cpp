@@ -38,6 +38,23 @@
 #include "mavesp8266.h"
 #include "mavesp8266_parameters.h"
 
+void toggle_debug_led() {
+    static uint8_t has_setup = 0;
+    static uint8_t pin_state = LOW;
+    if(has_setup == 0){
+        has_setup = 1;
+        pinMode(DEBUG_LED_PIN, OUTPUT);
+    }
+
+    if(pin_state == LOW){
+        pin_state = HIGH;
+    } else {
+        pin_state = LOW;
+    }
+
+    digitalWrite(DEBUG_LED_PIN, pin_state);
+}
+
 //---------------------------------------------------------------------------------
 //-- Base Comm Link
 MavESP8266Bridge::MavESP8266Bridge()
@@ -200,4 +217,8 @@ void MavESP8266Bridge::handle_non_mavlink(uint8_t b, bool msgReceived)
         _non_mavlink_len = 0;
     }
     _last_parse_state = _rxstatus.parse_state;
+}
+
+MavESP8266Leds::MavESP8266Leds() {
+    ;
 }

@@ -41,6 +41,7 @@
 #include "mavesp8266_httpd.h"
 #include "mavesp8266_component.h"
 #include "mavesp8266_power_mgmt.h"
+#include "mavesp8266_neopixel.h"
 
 #include <ESP8266mDNS.h>
 
@@ -96,6 +97,7 @@ MavESP8266Httpd         updateServer;
 MavESP8266UpdateImp     updateStatus;
 MavESP8266Log           Logger;
 MavESP8266PowerMgmt     Power;
+MavESP8266Neopixel Neopixel;
 
 //---------------------------------------------------------------------------------
 //-- Accessors
@@ -107,6 +109,7 @@ public:
     MavESP8266GCS*          getGCS          () { return &GCS;           }
     MavESP8266Log*          getLogger       () { return &Logger;        }
     MavESP8266PowerMgmt*    getPowerMgmt    () { return &Power;         }
+    MavESP8266Leds* getLeds(){return &Neopixel;}
 };
 
 MavESP8266WorldImp      World;
@@ -173,6 +176,7 @@ void setup() {
     Power.setQueryPinIndex(FC_POWER_QUERY_PIN);
 #endif
     Power.begin();
+    Neopixel.begin();
 
     DEBUG_LOG("Hello Vanttec!\n");
     DEBUG_LOG("\nConfiguring access point...\n");
@@ -193,7 +197,10 @@ void setup() {
          IPAddress(Parameters.getWifiStaSubnet()).toString().c_str());
         //WiFi.config(Parameters.getWifiStaIP(), Parameters.getWifiStaGateway(), Parameters.getWifiStaSubnet(), 0U, 0U);
         //WiFi.begin(Parameters.getWifiStaSsid(), Parameters.getWifiStaPassword());
-        WiFi.begin("vanttec_droneswarm", "droneswarm!");
+        // WiFi.begin("vanttec_droneswarm", "droneswarm!");
+        WiFi.begin("dd-wrt-alt", "teodiotelmex123");
+        toggle_debug_led();
+        toggle_debug_led();
 
         //-- Wait a minute to connect
         while(WiFi.status() != WL_CONNECTED) {
