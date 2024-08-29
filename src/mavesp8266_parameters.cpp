@@ -41,8 +41,8 @@
 #include "mavesp8266_parameters.h"
 #include "crc.h"
 #define DEBUG
-const char* kDEFAULT_SSID       = "Vanttec_DS";
-const char* kDEFAULT_PASSWORD   = "droneswarm";
+const char* kDEFAULT_SSID       = "vanttec_droneswarm";
+const char* kDEFAULT_PASSWORD   = "droneswarm!";
 
 //-- Reserved space for EEPROM persistence. A change in this will cause all values to reset to defaults.
 #define EEPROM_SPACE            32 * sizeof(uint32_t)
@@ -169,10 +169,10 @@ MavESP8266Parameters::resetToDefaults()
     _uart_baud_rate    = DEFAULT_UART_SPEED;
 
     IPAddress gateway_ip;
-    gateway_ip.fromString("192.168.0.1");
+    gateway_ip.fromString("192.168.1.1");
 
     IPAddress sta_ip;
-    sta_ip.fromString("192.168.0.10");
+    sta_ip.fromString("192.168.1.10");
 
     // TODO Configure drone subnet
     IPAddress subnet_ip;

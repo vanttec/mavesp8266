@@ -111,6 +111,7 @@ struct linkStatus {
     uint32_t    parse_errors;
     uint32_t    radio_status_sent;
     uint8_t     queue_status;
+    int32_t rssi;
 };
 
 //---------------------------------------------------------------------------------
@@ -127,7 +128,10 @@ public:
     virtual bool    heardFrom       () { return _heard_from;    }
     virtual uint8_t systemID        () { return _system_id;     }
     virtual uint8_t componentID     () { return _component_id;  }
-    virtual linkStatus* getStatus   () { return &_status;       }
+    virtual linkStatus* getStatus   () { 
+        _status.rssi = WiFi.RSSI();
+        return &_status;       
+    }
     mavlink_channel_t       _send_chan;
     mavlink_channel_t       _recv_chan;
 protected:

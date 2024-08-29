@@ -513,6 +513,7 @@ void handle_getJSysStatus()
         "\"vsent\": \"%u\", "
         "\"vlost\": \"%u\", "
         "\"radio\": \"%u\", "
+        "\"rssi\": \"%d\", "
         "\"buffer\": \"%u\""
         " }",
         gcsStatus->packets_received,
@@ -522,6 +523,7 @@ void handle_getJSysStatus()
         vehicleStatus->packets_sent,
         vehicleStatus->packets_lost,
         gcsStatus->radio_status_sent,
+        gcsStatus->rssi,
         vehicleStatus->queue_status
     );
     webServer.send(200, "application/json", message);

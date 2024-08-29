@@ -192,7 +192,8 @@ void setup() {
          IPAddress(Parameters.getWifiStaGateway()).toString().c_str(),
          IPAddress(Parameters.getWifiStaSubnet()).toString().c_str());
         //WiFi.config(Parameters.getWifiStaIP(), Parameters.getWifiStaGateway(), Parameters.getWifiStaSubnet(), 0U, 0U);
-        WiFi.begin(Parameters.getWifiStaSsid(), Parameters.getWifiStaPassword());
+        //WiFi.begin(Parameters.getWifiStaSsid(), Parameters.getWifiStaPassword());
+        WiFi.begin("vanttec_droneswarm", "droneswarm!");
 
         //-- Wait a minute to connect
         while(WiFi.status() != WL_CONNECTED) {
