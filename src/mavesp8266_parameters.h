@@ -90,7 +90,8 @@ public:
         ID_SUBNETSTA,
         ID_UART,
         ID_RAW_ENABLE,
-        ID_COUNT
+        ID_LED_BRIGHTNESS,
+        ID_COUNT,
     };
 
     void        begin                       ();
@@ -114,6 +115,7 @@ public:
     uint32_t    getWifiStaSubnet            ();
     uint32_t    getUartBaudRate             ();
     int8_t      getRawEnable                ();
+    uint8_t getLedBrightness();
 
     void        setDebugEnabled             (int8_t enabled);
     void        setWifiMode                 (int8_t mode);
@@ -129,6 +131,7 @@ public:
     void        setWifiStaSubnet            (uint32_t addr);
     void        setUartBaudRate             (uint32_t baud);
     void        setLocalIPAddress           (uint32_t ipAddress);
+    void setLedBrightness(uint8_t brightness);
 
     stMavEspParameters* getAt               (int index);
 

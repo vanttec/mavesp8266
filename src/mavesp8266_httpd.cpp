@@ -102,6 +102,7 @@ const char* kDEBUG      = "debug";
 const char* kREBOOT     = "reboot";
 const char* kPOSITION   = "position";
 const char* kMODE       = "mode";
+const char* kLEDBrightness = "led_brightness";
 
 const char* kFlashMaps[7] = {
     "512KB (256/256)",
@@ -241,12 +242,16 @@ void handle_getParameters()
         message += getWorld()->getParameters()->getAt(i)->id;
         message += "</code></td>";
         unsigned long val = 0;
-        if(getWorld()->getParameters()->getAt(i)->type == MAV_PARAM_TYPE_UINT32)
-            val = (unsigned long)*((uint32_t*)getWorld()->getParameters()->getAt(i)->value);
-        else if(getWorld()->getParameters()->getAt(i)->type == MAV_PARAM_TYPE_UINT16)
-            val = (unsigned long)*((uint16_t*)getWorld()->getParameters()->getAt(i)->value);
+        uint8_t parameter_type = getWorld()->getParameters()->getAt(i)->type;
+        void* parameter_value = getWorld()->getParameters()->getAt(i)->value;
+        if(parameter_type == MAV_PARAM_TYPE_UINT32)
+            val = (unsigned long)*((uint32_t*)parameter_value);
+        else if(parameter_type == MAV_PARAM_TYPE_UINT16)
+            val = (unsigned long)*((uint16_t*)parameter_value);
+        else if(parameter_type == MAV_PARAM_TYPE_UINT8)
+            val = (unsigned long)*((uint8_t*)parameter_value);
         else
-            val = (unsigned long)*((int8_t*)getWorld()->getParameters()->getAt(i)->value);
+            val = (unsigned long)*((int8_t*)parameter_value);
         message += "<td>";
         message += val;
         message += "</td></tr>";
@@ -370,6 +375,11 @@ static void handle_setup()
     message += "Baudrate:&nbsp;";
     message += "<input type='text' name='baud' value='";
     message += getWorld()->getParameters()->getUartBaudRate();
+    message += "'><br>";
+
+    message += "LED Brightness:&nbsp;";
+    message += "<input type='text' name='led_brightness' value='";
+    message += getWorld()->getParameters()->getLedBrightness();
     message += "'><br>";
     
     message += "<input type='submit' value='Save'>";
@@ -592,6 +602,10 @@ void handle_setParameters()
     if(webServer.hasArg(kMODE)) {
         ok = true;
         getWorld()->getParameters()->setWifiMode(webServer.arg(kMODE).toInt());
+    }
+    if(webServer.hasArg(kLEDBrightness)){
+        ok = true;
+        getWorld()->getParameters()->setLedBrightness(webServer.arg(kLEDBrightness).toInt());
     }
     if(webServer.hasArg(kREBOOT)) {
         ok = true;

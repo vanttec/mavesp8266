@@ -65,6 +65,7 @@ uint32_t    _wifi_subnetsta;
 uint32_t    _uart_baud_rate;
 uint32_t    _flash_left;
 int8_t      _raw_enable;
+uint8_t _led_brightness;
 
 //-- Parameters
 //   No string support in parameters so we stash a char[16] into 4 uint32_t
@@ -97,6 +98,7 @@ int8_t      _raw_enable;
      {"WIFI_SUBNET_STA",    &_wifi_subnetsta,       MavESP8266Parameters::ID_SUBNETSTA, sizeof(uint32_t),   MAV_PARAM_TYPE_UINT32,  false},
      {"UART_BAUDRATE",      &_uart_baud_rate,       MavESP8266Parameters::ID_UART,      sizeof(uint32_t),   MAV_PARAM_TYPE_UINT32,  false},
      {"RAW_ENABLE",         &_raw_enable,           MavESP8266Parameters::ID_RAW_ENABLE,sizeof(int8_t),     MAV_PARAM_TYPE_INT8,    false},
+     {"LED_BRIGHTNESS", &_led_brightness, MavESP8266Parameters::ID_LED_BRIGHTNESS, sizeof(uint8_t), MAV_PARAM_TYPE_UINT8, false},
 };
 
 //---------------------------------------------------------------------------------
@@ -154,6 +156,7 @@ uint32_t    MavESP8266Parameters::getWifiStaGateway () { return _wifi_gatewaysta
 uint32_t    MavESP8266Parameters::getWifiStaSubnet  () { return _wifi_subnetsta;    }
 uint32_t    MavESP8266Parameters::getUartBaudRate   () { return _uart_baud_rate;    }
 int8_t      MavESP8266Parameters::getRawEnable      () { return _raw_enable;        }
+uint8_t MavESP8266Parameters::getLedBrightness() {return _led_brightness; }
 
 //---------------------------------------------------------------------------------
 //-- Reset all to defaults
@@ -167,6 +170,7 @@ MavESP8266Parameters::resetToDefaults()
     _wifi_udp_hport    = DEFAULT_UDP_HPORT;
     _wifi_udp_cport    = DEFAULT_UDP_CPORT;
     _uart_baud_rate    = DEFAULT_UART_SPEED;
+    _led_brightness = 10;
 
     IPAddress gateway_ip;
     gateway_ip.fromString("192.168.1.1");
@@ -422,4 +426,9 @@ void
 MavESP8266Parameters::setUartBaudRate(uint32_t baud)
 {
     _uart_baud_rate = baud;
+}
+
+void MavESP8266Parameters::setLedBrightness(uint8_t brightness){
+    getWorld()->getLeds()->set_brightness(brightness);
+    _led_brightness = brightness;
 }

@@ -180,6 +180,7 @@ public:
     MavESP8266Leds();
     virtual void begin() = 0;
     virtual void fill_leds(uint8_t r, uint8_t g, uint8_t b) = 0;
+    virtual void set_brightness(uint8_t brightness) = 0;
 };
 
 //---------------------------------------------------------------------------------
