@@ -671,6 +671,14 @@ void handle_notFound(){
     webServer.send(404, FPSTR(kTEXTPLAIN), message);
 }
 
+void handle_blink(){
+    getWorld()->getLeds()->fill_leds(100, 100, 100);
+    delay(100);
+    getWorld()->getLeds()->fill_leds(0, 0, 0);
+    delay(100);
+    webServer.send(200, FPSTR(kTEXTPLAIN), "OK");
+}
+
 //---------------------------------------------------------------------------------
 MavESP8266Httpd::MavESP8266Httpd()
 {
@@ -695,6 +703,7 @@ MavESP8266Httpd::begin(MavESP8266Update* updateCB_)
     webServer.on("/log.json",       handle_getJLog);
     webServer.on("/style.css",      handle_getStylesheet);
     webServer.on("/update",         handle_update);
+    webServer.on("/blink", handle_blink);
     webServer.on("/upload",         HTTP_POST, handle_upload, handle_upload_status);
     webServer.onNotFound(           handle_notFound);
     webServer.begin();
