@@ -5,6 +5,9 @@
     - Default IP will be `192.168.0.2`, must change before adding more devices to the network.
     - Default baud rate is `500000`, should try increasing it.
 
+### Errata
+Currently, parameters only supports WiFi SSID of length <= 16.
+
 ## Current Binary
 
 Download the current version (MAVLink V2) from here: [ArduPilot fork](https://firmware.ardupilot.org/Tools/MAVESP8266/latest/)
