@@ -672,8 +672,10 @@ void handle_notFound(){
 }
 
 void handle_blink(){
+    toggle_debug_led();
     getWorld()->getLeds()->fill_leds(100, 100, 100);
     delay(100);
+    toggle_debug_led();
     getWorld()->getLeds()->fill_leds(0, 0, 0);
     delay(100);
     webServer.send(200, FPSTR(kTEXTPLAIN), "OK");

@@ -198,8 +198,8 @@ void setup() {
          IPAddress(Parameters.getWifiStaSubnet()).toString().c_str());
         //WiFi.config(Parameters.getWifiStaIP(), Parameters.getWifiStaGateway(), Parameters.getWifiStaSubnet(), 0U, 0U);
         //WiFi.begin(Parameters.getWifiStaSsid(), Parameters.getWifiStaPassword());
-        // WiFi.begin("vanttec_droneswarm", "droneswarm!");
-        WiFi.begin("dd-wrt-alt", "teodiotelmex123");
+        WiFi.begin("vanttec_droneswarm", "droneswarm!");
+        // WiFi.begin("dd-wrt-alt", "teodiotelmex123");
         toggle_debug_led();
  
         //-- Wait a minute to connect
@@ -272,7 +272,7 @@ void setup() {
         toggle_debug_led();
     });
     ArduinoOTA.onEnd([&updateStatus](){
-        updateStatus.scheduleReboot(1000);
+        updateStatus.scheduleReboot(5000);
     });
     ArduinoOTA.begin();
 
