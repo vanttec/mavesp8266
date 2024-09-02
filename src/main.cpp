@@ -44,6 +44,7 @@
 #include "mavesp8266_neopixel.h"
 
 #include <ESP8266mDNS.h>
+#include <ArduinoOTA.h>
 
 #define GPIO02  2
 
@@ -263,6 +264,18 @@ void setup() {
     Vehicle.begin(&GCS, localIP[3]);
     //-- Initialize Update Server
     updateServer.begin(&updateStatus);
+
+    ArduinoOTA.onStart([&updateStatus](){
+        updateStatus.updateStarted();
+    });
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total){
+        toggle_debug_led();
+    });
+    ArduinoOTA.onEnd([&updateStatus](){
+        updateStatus.scheduleReboot(1000);
+    });
+    ArduinoOTA.begin();
+
     DEBUG_LOG("Started service.");
 }
 
@@ -287,4 +300,5 @@ void loop() {
         ESP.restart();
     }
     updateServer.checkUpdates();
+    ArduinoOTA.handle();
 }
