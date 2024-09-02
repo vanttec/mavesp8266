@@ -7,6 +7,14 @@ MavESP8266Neopixel::MavESP8266Neopixel() {
 
 void MavESP8266Neopixel::begin() {
     FastLED.addLeds<WS2812B, data_pin_, GRB>(leds, num_leds_).setCorrection(TypicalSMD5050);
+
+    // Low brightness red blink on turn on.
+    set_brightness(10);
+    fill_leds(0, 0, 0);
+    delay(100);
+    fill_leds(127, 0, 127);
+    delay(100);
+
     set_brightness(getWorld()->getParameters()->getLedBrightness());
     fill_leds(0, 0, 0);
 }

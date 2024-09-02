@@ -200,17 +200,20 @@ void setup() {
         // WiFi.begin("vanttec_droneswarm", "droneswarm!");
         WiFi.begin("dd-wrt-alt", "teodiotelmex123");
         toggle_debug_led();
-        toggle_debug_led();
-
+ 
         //-- Wait a minute to connect
+        // TODO Fix-up connection logic, remove AP mode. Should we keep running if no WiFi connection could be established?
         while(WiFi.status() != WL_CONNECTED) {
             #ifdef ENABLE_DEBUG
-            //DEBUG_LOG(".");
             DEBUG_LOG("not connected: %u\n", WiFi.status());
             #endif
+            Neopixel.fill_leds(0, 0, 100);
+            delay(500);
+            Neopixel.fill_leds(0, 0, 0);
             delay(500);
         }
         if(WiFi.status() == WL_CONNECTED) {
+            Neopixel.fill_leds(0, 0, 0);
             DEBUG_LOG("Connected to access point\n");
             localIP = WiFi.localIP();
             WiFi.setAutoReconnect(true);
@@ -238,7 +241,7 @@ void setup() {
     }
 
     //-- TODO  Boost power to Max
-    // WiFi.setOutputPower(20.5);
+    WiFi.setOutputPower(20.5);
     //-- MDNS
     char mdsnName[256];
     sprintf(mdsnName, "MavEsp8266-%d",localIP[3]);
