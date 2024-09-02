@@ -8,8 +8,8 @@ from find_esp import scan_network
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('ip_network')
-    parser.add_argument('-e', '--env', default='esp07')
+    parser.add_argument("ip_network")
+    parser.add_argument("-e", "--env", default="esp07")
     args = parser.parse_args()
 
     network = ipaddress.ip_network(args.ip_network)
@@ -20,16 +20,16 @@ if __name__ == "__main__":
 
     for address in tqdm.tqdm(scan_result.keys()):
         cmd = [
-            'pio',
-            'run',
-            '-d',
-            '..',
-            '-e',
+            "pio",
+            "run",
+            "-d",
+            "..",
+            "-e",
             args.env,
-            '--target',
-            'upload',
-            '--upload-port',
-            str(address)
+            "--target",
+            "upload",
+            "--upload-port",
+            str(address),
         ]
         print(f"Running... {' '.join(cmd)}")
         output = check_output(cmd, stderr=STDOUT, timeout=60)
