@@ -8,7 +8,7 @@ def create_url(address: ipaddress.ip_address):
     return f"http://{address}/info.json"
 
 
-semaphore = asyncio.Semaphore(200)
+semaphore = asyncio.Semaphore(100)
 
 
 async def check_host(
