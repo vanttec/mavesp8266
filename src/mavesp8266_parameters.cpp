@@ -118,6 +118,7 @@ MavESP8266Parameters::begin()
 {
     EEPROM.begin(EEPROM_SPACE);
     _initEeprom();
+    setLedBrightness(255);
 }
 
 //---------------------------------------------------------------------------------
