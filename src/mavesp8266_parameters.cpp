@@ -171,7 +171,7 @@ MavESP8266Parameters::resetToDefaults()
     _wifi_udp_hport    = DEFAULT_UDP_HPORT;
     _wifi_udp_cport    = DEFAULT_UDP_CPORT;
     _uart_baud_rate    = DEFAULT_UART_SPEED;
-    _led_brightness = 10;
+    _led_brightness = 255;
 
     IPAddress gateway_ip;
     gateway_ip.fromString("192.168.1.1");
